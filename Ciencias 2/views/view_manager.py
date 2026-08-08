@@ -36,10 +36,6 @@ class ViewManager(ctk.CTkFrame):
         }
 
     def show_view(self, view_key: str):
-        """
-        Muestra la vista identificada por *view_key*.
-        Añade la vista actual al historial para poder retroceder.
-        """
         if view_key not in self._views:
             raise KeyError(f"Vista '{view_key}' no registrada.")
 
