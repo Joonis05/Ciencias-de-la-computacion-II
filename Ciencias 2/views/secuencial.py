@@ -23,6 +23,9 @@ class SecuencialView(BaseView):
         self._cell_frames: list[ctk.CTkFrame] = []
         self._mode_var = ctk.StringVar(value="Aleatorio")
 
+        self._anim_job = None
+        self._is_animating = False
+
         self._build_ui()
 
     def _build_ui(self):
@@ -33,10 +36,6 @@ class SecuencialView(BaseView):
         self.add_subtitle(
             "Recorre los elementos uno a uno hasta encontrar el valor buscado."
         )
-
-        # =========================================================
-        # CONFIGURACIÓN
-        # =========================================================
 
         config_frame = ctk.CTkFrame(
             self.content,
@@ -60,10 +59,6 @@ class SecuencialView(BaseView):
             pady=14,
             fill="x"
         )
-
-        # =========================================================
-        # FILA 1 - MODO
-        # =========================================================
 
         row1 = ctk.CTkFrame(
             inner,
@@ -94,10 +89,6 @@ class SecuencialView(BaseView):
             font=ctk.CTkFont(size=13),
         )
         self._mode_seg.pack(side="left")
-
-        # =========================================================
-        # FILA 2 - RANGO, TAMAÑO DE CLAVE Y CANTIDAD
-        # =========================================================
 
         row2 = ctk.CTkFrame(
             inner,
@@ -198,7 +189,7 @@ class SecuencialView(BaseView):
             str(_DEFAULT_SIZE)
         )
 
-        # Botón generar
+        #Generar
         self._btn_generate = ctk.CTkButton(
             row2,
             text="Generar",
@@ -215,7 +206,7 @@ class SecuencialView(BaseView):
             padx=(0, 8)
         )
 
-        # Botón limpiar
+        # Limpiar
         self._btn_clear = ctk.CTkButton(
             row2,
             text="Limpiar",
@@ -242,10 +233,6 @@ class SecuencialView(BaseView):
             text_color=("gray50", "gray55"),
         )
         self._info_label.pack(side="left")
-
-        # =========================================================
-        # FILA 3 - ENTRADA MANUAL
-        # =========================================================
 
         row3 = ctk.CTkFrame(
             inner,
@@ -277,9 +264,119 @@ class SecuencialView(BaseView):
             expand=True
         )
 
-        # =========================================================
-        # ERROR
-        # =========================================================
+        search_frame = ctk.CTkFrame(
+            self.content,
+            corner_radius=12,
+            fg_color=("gray92", "gray17"),
+            border_width=2,
+            border_color=("gray78", "gray30"),
+        )
+        search_frame.pack(
+            fill="x",
+            padx=10,
+            pady=(0, 8)
+        )
+
+        search_inner = ctk.CTkFrame(
+            search_frame,
+            fg_color="transparent"
+        )
+        search_inner.pack(
+            padx=16,
+            pady=12,
+            fill="x"
+        )
+
+        s_row1 = ctk.CTkFrame(search_inner, fg_color="transparent")
+        s_row1.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(
+            s_row1,
+            text="Valor objetivo:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(side="left", padx=(0, 8))
+
+        self._search_entry = ctk.CTkEntry(
+            s_row1,
+            width=110,
+            height=34,
+            placeholder_text="Ej: 45",
+            font=ctk.CTkFont(size=14),
+            justify="center",
+        )
+        self._search_entry.pack(side="left", padx=(0, 12))
+
+        self._btn_search = ctk.CTkButton(
+            s_row1,
+            text="Buscar",
+            width=110,
+            height=34,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._on_start_search,
+        )
+        self._btn_search.pack(side="left", padx=(0, 10))
+
+        self._btn_reset_search = ctk.CTkButton(
+            s_row1,
+            text="Reiniciar Búsqueda",
+            width=160,
+            height=34,
+            fg_color=("gray70", "gray30"),
+            hover_color=("gray60", "gray40"),
+            text_color=("black", "white"),
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._on_reset_search,
+        )
+        self._btn_reset_search.pack(side="left")
+
+        s_row2 = ctk.CTkFrame(search_inner, fg_color="transparent")
+        s_row2.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(
+            s_row2,
+            text="Velocidad (ms):",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).pack(side="left", padx=(0, 8))
+
+        self._speed_slider = ctk.CTkSlider(
+            s_row2,
+            from_=100,
+            to=2000,
+            number_of_steps=19,
+            width=180,
+            command=self._on_speed_change,
+        )
+        self._speed_slider.set(500)
+        self._speed_slider.pack(side="left", padx=(0, 8))
+
+        self._speed_label = ctk.CTkLabel(
+            s_row2,
+            text="500 ms",
+            font=ctk.CTkFont(size=13),
+            text_color=("gray40", "gray60"),
+            width=65,
+        )
+        self._speed_label.pack(side="left")
+
+        self._status_box = ctk.CTkFrame(
+            search_inner,
+            corner_radius=8,
+            fg_color=("gray85", "gray22"),
+            border_width=1,
+            border_color=("gray75", "gray35"),
+        )
+        self._status_box.pack(fill="x", pady=(4, 0))
+
+        self._status_label = ctk.CTkLabel(
+            self._status_box,
+            text="Estado: Listo para realizar una búsqueda.",
+            font=ctk.CTkFont(size=13),
+            text_color=("gray20", "gray80"),
+            anchor="w",
+            padx=12,
+            pady=8,
+        )
+        self._status_label.pack(fill="x")
 
         self._error_label = ctk.CTkLabel(
             self.content,
@@ -292,10 +389,6 @@ class SecuencialView(BaseView):
             padx=20,
             pady=(0, 4)
         )
-
-        # =========================================================
-        # ESTRUCTURA
-        # =========================================================
 
         self._scroll_frame = ctk.CTkScrollableFrame(
             self.content,
@@ -331,10 +424,6 @@ class SecuencialView(BaseView):
             self._mode_var.get()
         )
 
-    # =============================================================
-    # CAMBIO DE MODO
-    # =============================================================
-
     def _on_mode_change(self, selected_mode: str):
 
         if selected_mode == "Aleatorio":
@@ -352,10 +441,6 @@ class SecuencialView(BaseView):
             )
 
         self._clear_error()
-
-    # =============================================================
-    # VALIDACIÓN DE CONFIGURACIÓN
-    # =============================================================
 
     def _validate_configuration(self):
 
@@ -434,7 +519,6 @@ class SecuencialView(BaseView):
             )
             return None
 
-        # El tamaño de clave también limita el valor máximo.
         max_by_key_size = (10 ** key_size) - 1
 
         if value_range > max_by_key_size:
@@ -446,10 +530,6 @@ class SecuencialView(BaseView):
             return None
 
         return value_range, key_size, size
-
-    # =============================================================
-    # VALIDACIÓN DE VALORES MANUALES
-    # =============================================================
 
     def _validate_manual_values(
         self,
@@ -506,11 +586,9 @@ class SecuencialView(BaseView):
 
         return parsed_values
 
-    # =============================================================
-    # GENERAR
-    # =============================================================
-
     def _on_generate(self):
+
+        self._on_reset_search()
 
         configuration = self._validate_configuration()
 
@@ -521,10 +599,7 @@ class SecuencialView(BaseView):
 
         mode = self._mode_var.get()
 
-        # ---------------------------------------------------------
         # ALEATORIO
-        # ---------------------------------------------------------
-
         if mode == "Aleatorio":
 
             self._data = [
@@ -541,10 +616,6 @@ class SecuencialView(BaseView):
 
             return
 
-        # ---------------------------------------------------------
-        # MANUAL
-        # ---------------------------------------------------------
-
         values = self._validate_manual_values(
             value_range,
             key_size,
@@ -554,7 +625,6 @@ class SecuencialView(BaseView):
         if values is None:
             return
 
-        # No permitir superar la cantidad indicada.
         remaining = size - len(self._data)
 
         if len(values) > remaining:
@@ -565,7 +635,6 @@ class SecuencialView(BaseView):
             )
             return
 
-        # Agregamos los nuevos valores SIN borrar los anteriores.
         self._data.extend(values)
 
         self._manual_entry.delete(0, "end")
@@ -577,11 +646,10 @@ class SecuencialView(BaseView):
             text=f"{len(self._data)}/{size} elementos"
         )
 
-    # =============================================================
-    # LIMPIAR
-    # =============================================================
-
+    # Limpiar
     def _on_clear(self):
+
+        self._on_reset_search()
 
         self._data.clear()
 
@@ -613,10 +681,6 @@ class SecuencialView(BaseView):
         self._placeholder.pack(
             pady=40
         )
-
-    # =============================================================
-    # REPRESENTACIÓN
-    # =============================================================
 
     def _render_structure(self):
 
@@ -678,6 +742,7 @@ class SecuencialView(BaseView):
                 corner_radius=8,
                 fg_color=bg,
             )
+            row._default_bg = bg
 
             row.pack(
                 fill="x",
@@ -717,10 +782,6 @@ class SecuencialView(BaseView):
 
             self._cell_frames.append(row)
 
-    # =============================================================
-    # MENSAJES
-    # =============================================================
-
     def _show_error(self, msg: str):
         self._error_label.configure(
             text=msg
@@ -730,3 +791,139 @@ class SecuencialView(BaseView):
         self._error_label.configure(
             text=""
         )
+
+    # BÚSQUEDA Y ANIMACIÓN
+    def _on_speed_change(self, value):
+        val = int(value)
+        self._speed_label.configure(text=f"{val} ms")
+
+    def _set_controls_state(self, state: str):
+        if state == "disabled":
+            self._mode_seg.configure(state="disabled")
+            self._range_entry.configure(state="disabled")
+            self._key_size_entry.configure(state="disabled")
+            self._size_entry.configure(state="disabled")
+            self._manual_entry.configure(state="disabled")
+            self._btn_generate.configure(state="disabled")
+            self._btn_clear.configure(state="disabled")
+            self._search_entry.configure(state="disabled")
+            self._btn_search.configure(state="disabled")
+        else:
+            self._mode_seg.configure(state="normal")
+            self._range_entry.configure(state="normal")
+            self._key_size_entry.configure(state="normal")
+            self._size_entry.configure(state="normal")
+            self._btn_generate.configure(state="normal")
+            self._btn_clear.configure(state="normal")
+            self._search_entry.configure(state="normal")
+            self._btn_search.configure(state="normal")
+            self._on_mode_change(self._mode_var.get())
+
+    def _reset_search_visuals(self):
+        for row in self._cell_frames:
+            if hasattr(row, "_default_bg"):
+                row.configure(fg_color=row._default_bg)
+
+    def _on_start_search(self):
+        if self._is_animating:
+            return
+
+        if not self._data:
+            self._show_error("Primero genera o agrega datos a la estructura para buscar.")
+            return
+
+        raw_target = self._search_entry.get().strip()
+        if not raw_target:
+            self._show_error("Ingresa el valor objetivo a buscar.")
+            return
+
+        try:
+            target = int(raw_target)
+        except ValueError:
+            self._show_error("El valor a buscar debe ser un número entero.")
+            return
+
+        self._clear_error()
+        self._reset_search_visuals()
+        self._set_controls_state("disabled")
+        self._is_animating = True
+
+        self._step_sequential(index=0, target=target, step=1)
+
+    def _step_sequential(self, index: int, target: int, step: int):
+        if not self._is_animating:
+            return
+
+        if index > 0 and index - 1 < len(self._cell_frames):
+            prev_row = self._cell_frames[index - 1]
+            if hasattr(prev_row, "_default_bg"):
+                prev_row.configure(fg_color=prev_row._default_bg)
+
+        if index >= len(self._data):
+            for row in self._cell_frames:
+                row.configure(fg_color=("#FEE2E2", "#450A0A"))
+            self._status_label.configure(
+                text=f"Elemento {target} no encontrado en la estructura tras recorrer {len(self._data)} elemento(s)."
+            )
+            self._is_animating = False
+            self._anim_job = None
+            self._set_controls_state("normal")
+            return
+
+        curr_row = self._cell_frames[index]
+        curr_row.configure(fg_color=("#FDE047", "#854D0E"))
+
+        self._scroll_to_index(index)
+
+        current_val = self._data[index]
+        if current_val == target:
+            curr_row.configure(fg_color=("#4ADE80", "#166534"))
+            self._status_label.configure(
+                text=f"¡Elemento {target} encontrado en el índice {index}! (Pasos evaluados: {step})"
+            )
+            self._is_animating = False
+            self._anim_job = None
+            self._set_controls_state("normal")
+            return
+
+        self._status_label.configure(
+            text=f"Paso {step}: Comparando en índice {index}: {current_val} == {target} -> No coincide."
+        )
+
+        speed = int(self._speed_slider.get())
+        self._anim_job = self.after(
+            speed, lambda: self._step_sequential(index + 1, target, step + 1)
+        )
+
+    def _on_reset_search(self):
+        if self._anim_job is not None:
+            try:
+                self.after_cancel(self._anim_job)
+            except Exception:
+                pass
+            self._anim_job = None
+
+        self._is_animating = False
+        self._reset_search_visuals()
+        self._set_controls_state("normal")
+        self._status_label.configure(text="Estado: Búsqueda reiniciada. Listo para buscar.")
+        self._clear_error()
+
+    def _scroll_to_index(self, index: int):
+        if not self._data:
+            return
+        try:
+            fraction = max(0.0, min(1.0, index / len(self._data)))
+            self._scroll_frame._parent_canvas.yview_moveto(fraction)
+        except Exception:
+            pass
+
+    def destroy(self):
+        if self._anim_job is not None:
+            try:
+                self.after_cancel(self._anim_job)
+            except Exception:
+                pass
+            self._anim_job = None
+        super().destroy()
+

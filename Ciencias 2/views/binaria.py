@@ -25,6 +25,9 @@ class BinariaView(BaseView):
         self._cell_frames: list[ctk.CTkFrame] = []
         self._mode_var = ctk.StringVar(value="Aleatorio")
 
+        self._anim_job = None
+        self._is_animating = False
+
         self._build_ui()
 
     def _build_ui(self):
@@ -36,10 +39,6 @@ class BinariaView(BaseView):
             "Divide el conjunto ordenado a la mitad en cada paso "
             "para localizar el valor."
         )
-
-        # =========================================================
-        # CONFIGURACIÓN
-        # =========================================================
 
         config_frame = ctk.CTkFrame(
             self.content,
@@ -63,10 +62,6 @@ class BinariaView(BaseView):
             pady=14,
             fill="x"
         )
-
-        # =========================================================
-        # FILA 1 - MODO
-        # =========================================================
 
         row1 = ctk.CTkFrame(
             inner,
@@ -99,10 +94,6 @@ class BinariaView(BaseView):
         self._mode_seg.pack(
             side="left"
         )
-
-        # =========================================================
-        # FILA 2 - RANGO, TAMAÑO DE CLAVE Y CANTIDAD
-        # =========================================================
 
         row2 = ctk.CTkFrame(
             inner,
@@ -250,10 +241,6 @@ class BinariaView(BaseView):
             side="left"
         )
 
-        # =========================================================
-        # FILA 3 - ENTRADA MANUAL
-        # =========================================================
-
         row3 = ctk.CTkFrame(
             inner,
             fg_color="transparent"
@@ -286,10 +273,121 @@ class BinariaView(BaseView):
             expand=True
         )
 
-        # =========================================================
-        # ERROR
-        # =========================================================
+        search_frame = ctk.CTkFrame(
+            self.content,
+            corner_radius=12,
+            fg_color=("gray92", "gray17"),
+            border_width=2,
+            border_color=("gray78", "gray30"),
+        )
+        search_frame.pack(
+            fill="x",
+            padx=10,
+            pady=(0, 8)
+        )
 
+        search_inner = ctk.CTkFrame(
+            search_frame,
+            fg_color="transparent"
+        )
+        search_inner.pack(
+            padx=16,
+            pady=12,
+            fill="x"
+        )
+
+        s_row1 = ctk.CTkFrame(search_inner, fg_color="transparent")
+        s_row1.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(
+            s_row1,
+            text="Valor objetivo:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(side="left", padx=(0, 8))
+
+        self._search_entry = ctk.CTkEntry(
+            s_row1,
+            width=110,
+            height=34,
+            placeholder_text="Ej: 45",
+            font=ctk.CTkFont(size=14),
+            justify="center",
+        )
+        self._search_entry.pack(side="left", padx=(0, 12))
+
+        self._btn_search = ctk.CTkButton(
+            s_row1,
+            text="🔍 Buscar",
+            width=110,
+            height=34,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._on_start_search,
+        )
+        self._btn_search.pack(side="left", padx=(0, 10))
+
+        self._btn_reset_search = ctk.CTkButton(
+            s_row1,
+            text="Reiniciar Búsqueda",
+            width=160,
+            height=34,
+            fg_color=("gray70", "gray30"),
+            hover_color=("gray60", "gray40"),
+            text_color=("black", "white"),
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._on_reset_search,
+        )
+        self._btn_reset_search.pack(side="left")
+
+        s_row2 = ctk.CTkFrame(search_inner, fg_color="transparent")
+        s_row2.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(
+            s_row2,
+            text="Velocidad (ms):",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).pack(side="left", padx=(0, 8))
+
+        self._speed_slider = ctk.CTkSlider(
+            s_row2,
+            from_=100,
+            to=2000,
+            number_of_steps=19,
+            width=180,
+            command=self._on_speed_change,
+        )
+        self._speed_slider.set(500)
+        self._speed_slider.pack(side="left", padx=(0, 8))
+
+        self._speed_label = ctk.CTkLabel(
+            s_row2,
+            text="500 ms",
+            font=ctk.CTkFont(size=13),
+            text_color=("gray40", "gray60"),
+            width=65,
+        )
+        self._speed_label.pack(side="left")
+
+        self._status_box = ctk.CTkFrame(
+            search_inner,
+            corner_radius=8,
+            fg_color=("gray85", "gray22"),
+            border_width=1,
+            border_color=("gray75", "gray35"),
+        )
+        self._status_box.pack(fill="x", pady=(4, 0))
+
+        self._status_label = ctk.CTkLabel(
+            self._status_box,
+            text="Estado: Listo para realizar una búsqueda binaria.",
+            font=ctk.CTkFont(size=13),
+            text_color=("gray20", "gray80"),
+            anchor="w",
+            padx=12,
+            pady=8,
+        )
+        self._status_label.pack(fill="x")
+
+        # ERROR
         self._error_label = ctk.CTkLabel(
             self.content,
             text="",
@@ -301,10 +399,6 @@ class BinariaView(BaseView):
             padx=20,
             pady=(0, 4)
         )
-
-        # =========================================================
-        # ESTRUCTURA
-        # =========================================================
 
         self._scroll_frame = ctk.CTkScrollableFrame(
             self.content,
@@ -342,10 +436,6 @@ class BinariaView(BaseView):
             self._mode_var.get()
         )
 
-    # =============================================================
-    # CAMBIO DE MODO
-    # =============================================================
-
     def _on_mode_change(self, selected_mode: str):
 
         if selected_mode == "Aleatorio":
@@ -363,10 +453,6 @@ class BinariaView(BaseView):
             )
 
         self._clear_error()
-
-    # =============================================================
-    # VALIDACIÓN DE CONFIGURACIÓN
-    # =============================================================
 
     def _validate_configuration(self):
 
@@ -445,7 +531,6 @@ class BinariaView(BaseView):
             )
             return None
 
-        # El tamaño de clave limita el máximo posible.
         max_by_key_size = (10 ** key_size) - 1
 
         if value_range > max_by_key_size:
@@ -457,10 +542,6 @@ class BinariaView(BaseView):
             return None
 
         return value_range, key_size, size
-
-    # =============================================================
-    # VALIDACIÓN DE VALORES MANUALES
-    # =============================================================
 
     def _validate_manual_values(
         self,
@@ -517,11 +598,9 @@ class BinariaView(BaseView):
 
         return parsed_values
 
-    # =============================================================
-    # GENERAR
-    # =============================================================
-
     def _on_generate(self):
+
+        self._on_reset_search()
 
         configuration = self._validate_configuration()
 
@@ -532,10 +611,7 @@ class BinariaView(BaseView):
 
         mode = self._mode_var.get()
 
-        # ---------------------------------------------------------
         # ALEATORIO
-        # ---------------------------------------------------------
-
         if mode == "Aleatorio":
 
             self._data = [
@@ -543,7 +619,6 @@ class BinariaView(BaseView):
                 for _ in range(size)
             ]
 
-            # La búsqueda binaria necesita datos ordenados.
             self._data.sort()
 
             self._clear_error()
@@ -555,10 +630,6 @@ class BinariaView(BaseView):
 
             return
 
-        # ---------------------------------------------------------
-        # MANUAL
-        # ---------------------------------------------------------
-
         values = self._validate_manual_values(
             value_range,
             key_size,
@@ -568,7 +639,6 @@ class BinariaView(BaseView):
         if values is None:
             return
 
-        # Cantidad de espacios disponibles.
         remaining = size - len(self._data)
 
         if len(values) > remaining:
@@ -578,23 +648,6 @@ class BinariaView(BaseView):
                 f"de los {size} indicados."
             )
             return
-
-        # ---------------------------------------------------------
-        # INSERCIÓN ORDENADA
-        # ---------------------------------------------------------
-        #
-        # Cada valor se coloca automáticamente en su posición.
-        #
-        # Ejemplo:
-        #
-        # [10, 30, 50, 80]
-        #
-        # agregar 40
-        #
-        # [10, 30, 40, 50, 80]
-        #
-        # Los elementos posteriores se desplazan.
-        # ---------------------------------------------------------
 
         for value in values:
             insort(self._data, value)
@@ -611,11 +664,10 @@ class BinariaView(BaseView):
             text=f"{len(self._data)}/{size} elementos ordenados"
         )
 
-    # =============================================================
     # LIMPIAR
-    # =============================================================
-
     def _on_clear(self):
+
+        self._on_reset_search()
 
         self._data.clear()
 
@@ -647,10 +699,6 @@ class BinariaView(BaseView):
         self._placeholder.pack(
             pady=40
         )
-
-    # =============================================================
-    # REPRESENTACIÓN
-    # =============================================================
 
     def _render_structure(self):
 
@@ -698,6 +746,19 @@ class BinariaView(BaseView):
             side="left"
         )
 
+        ctk.CTkLabel(
+            header,
+            text="Punteros",
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold"
+            ),
+            text_color=("gray30", "gray70"),
+        ).pack(
+            side="right",
+            padx=16
+        )
+
         for idx, value in enumerate(self._data):
 
             bg = (
@@ -712,6 +773,7 @@ class BinariaView(BaseView):
                 corner_radius=8,
                 fg_color=bg,
             )
+            row._default_bg = bg
 
             row.pack(
                 fill="x",
@@ -749,11 +811,23 @@ class BinariaView(BaseView):
                 padx=4
             )
 
+            ptr_lbl = ctk.CTkLabel(
+                row,
+                text="",
+                font=ctk.CTkFont(
+                    family="Consolas",
+                    size=12,
+                    weight="bold"
+                ),
+                text_color=("gray40", "gray60"),
+                anchor="e",
+            )
+            ptr_lbl.pack(side="right", padx=12)
+            row._ptr_lbl = ptr_lbl
+
             self._cell_frames.append(row)
 
-    # =============================================================
     # MENSAJES
-    # =============================================================
 
     def _show_error(self, msg: str):
         self._error_label.configure(
@@ -764,3 +838,183 @@ class BinariaView(BaseView):
         self._error_label.configure(
             text=""
         )
+
+
+    # BÚSQUEDA Y ANIMACIÓN
+    def _on_speed_change(self, value):
+        val = int(value)
+        self._speed_label.configure(text=f"{val} ms")
+
+    def _set_controls_state(self, state: str):
+        if state == "disabled":
+            self._mode_seg.configure(state="disabled")
+            self._range_entry.configure(state="disabled")
+            self._key_size_entry.configure(state="disabled")
+            self._size_entry.configure(state="disabled")
+            self._manual_entry.configure(state="disabled")
+            self._btn_generate.configure(state="disabled")
+            self._btn_clear.configure(state="disabled")
+            self._search_entry.configure(state="disabled")
+            self._btn_search.configure(state="disabled")
+        else:
+            self._mode_seg.configure(state="normal")
+            self._range_entry.configure(state="normal")
+            self._key_size_entry.configure(state="normal")
+            self._size_entry.configure(state="normal")
+            self._btn_generate.configure(state="normal")
+            self._btn_clear.configure(state="normal")
+            self._search_entry.configure(state="normal")
+            self._btn_search.configure(state="normal")
+            self._on_mode_change(self._mode_var.get())
+
+    def _reset_search_visuals(self):
+        for row in self._cell_frames:
+            if hasattr(row, "_default_bg"):
+                row.configure(fg_color=row._default_bg)
+            if hasattr(row, "_ptr_lbl"):
+                row._ptr_lbl.configure(text="", text_color=("gray40", "gray60"))
+
+    def _on_start_search(self):
+        if self._is_animating:
+            return
+
+        if not self._data:
+            self._show_error("Primero genera o agrega datos a la estructura para buscar.")
+            return
+
+        raw_target = self._search_entry.get().strip()
+        if not raw_target:
+            self._show_error("Ingresa el valor objetivo a buscar.")
+            return
+
+        try:
+            target = int(raw_target)
+        except ValueError:
+            self._show_error("El valor a buscar debe ser un número entero.")
+            return
+
+        self._clear_error()
+        self._reset_search_visuals()
+        self._set_controls_state("disabled")
+        self._is_animating = True
+
+        self._step_binary(inicio=0, fin=len(self._data) - 1, target=target, step=1)
+
+    def _step_binary(self, inicio: int, fin: int, target: int, step: int):
+        if not self._is_animating:
+            return
+
+        if inicio > fin:
+            for row in self._cell_frames:
+                row.configure(fg_color=("#FEE2E2", "#450A0A"))
+                if hasattr(row, "_ptr_lbl"):
+                    row._ptr_lbl.configure(text="", text_color=("gray40", "gray60"))
+
+            self._status_label.configure(
+                text=f"Elemento {target} no existe en el arreglo (inicio={inicio} > fin={fin}). Pasos evaluados: {step - 1}."
+            )
+            self._is_animating = False
+            self._anim_job = None
+            self._set_controls_state("normal")
+            return
+
+        medio = (inicio + fin) // 2
+
+        for idx, row in enumerate(self._cell_frames):
+            ptr_tags = []
+
+            if idx < inicio or idx > fin:
+                row.configure(fg_color=("gray90", "gray20"))
+            else:
+                row.configure(fg_color=("gray82", "gray28"))
+
+            if idx == inicio:
+                ptr_tags.append("INICIO")
+            if idx == fin:
+                ptr_tags.append("FIN")
+            if idx == medio:
+                ptr_tags.append("MEDIO")
+
+            if hasattr(row, "_ptr_lbl"):
+                if ptr_tags:
+                    tag_str = " | ".join(ptr_tags)
+                    color = ("#2563EB", "#60A5FA") if idx == medio else ("#374151", "#9CA3AF")
+                    row._ptr_lbl.configure(
+                        text=f" [{tag_str}]",
+                        text_color=color
+                    )
+                else:
+                    row._ptr_lbl.configure(text="")
+
+        # Resaltar la posición MEDIO
+        medio_row = self._cell_frames[medio]
+        medio_row.configure(fg_color=("#FB923C", "#9A3412"))
+
+        self._scroll_to_index(medio)
+
+        medio_val = self._data[medio]
+
+        if medio_val == target:
+            medio_row.configure(fg_color=("#4ADE80", "#166534"))
+            if hasattr(medio_row, "_ptr_lbl"):
+                medio_row._ptr_lbl.configure(
+                    text="[ENCONTRADO]",
+                    text_color=("#166534", "#86EFAC")
+                )
+            self._status_label.configure(
+                text=f"¡Elemento {target} encontrado en el índice {medio}! (Paso {step}: inicio={inicio}, fin={fin}, medio={medio})"
+            )
+            self._is_animating = False
+            self._anim_job = None
+            self._set_controls_state("normal")
+            return
+
+        speed = int(self._speed_slider.get())
+
+        if target < medio_val:
+            self._status_label.configure(
+                text=f"Paso {step}: inicio={inicio}, fin={fin}, medio={medio}. Como {target} < {medio_val}, el valor buscado es menor -> Descartando mitad derecha (fin pasa a {medio - 1})."
+            )
+            self._anim_job = self.after(
+                speed, lambda: self._step_binary(inicio, medio - 1, target, step + 1)
+            )
+        else: 
+            self._status_label.configure(
+                text=f"Paso {step}: inicio={inicio}, fin={fin}, medio={medio}. Como {target} > {medio_val}, el valor buscado es mayor -> Descartando mitad izquierda (inicio pasa a {medio + 1})."
+            )
+            self._anim_job = self.after(
+                speed, lambda: self._step_binary(medio + 1, fin, target, step + 1)
+            )
+
+    def _on_reset_search(self):
+        if self._anim_job is not None:
+            try:
+                self.after_cancel(self._anim_job)
+            except Exception:
+                pass
+            self._anim_job = None
+
+        self._is_animating = False
+        self._reset_search_visuals()
+        self._set_controls_state("normal")
+        self._status_label.configure(text="Estado: Búsqueda reiniciada. Listo para buscar.")
+        self._clear_error()
+
+    def _scroll_to_index(self, index: int):
+        if not self._data:
+            return
+        try:
+            fraction = max(0.0, min(1.0, index / len(self._data)))
+            self._scroll_frame._parent_canvas.yview_moveto(fraction)
+        except Exception:
+            pass
+
+    def destroy(self):
+        if self._anim_job is not None:
+            try:
+                self.after_cancel(self._anim_job)
+            except Exception:
+                pass
+            self._anim_job = None
+        super().destroy()
+
