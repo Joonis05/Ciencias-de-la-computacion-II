@@ -24,3 +24,4 @@ class BusquedasInternasView(BaseView):
         self.add_nav_button("Binaria", "binaria", parent=btn_frame)
         self.add_nav_button("Transformación de Claves", "transformacion_claves", parent=btn_frame)
         self.add_nav_button("Búsqueda por Residuos", "residuos", parent=btn_frame)
+        self.add_nav_button("Árboles de Huffman", "huffman", parent=btn_frame)

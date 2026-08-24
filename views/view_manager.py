@@ -27,6 +27,7 @@ class ViewManager(ctk.CTkFrame):
         from views.Arbol_digital import ArbolDigitalView
         from views.Arbol_trie import ArbolTrieView
         from views.Arbol_multiple import ArbolMultipleView
+        from views.huffman import HuffmanView
         from views.grafos import GrafosView
 
         self._views = {
@@ -41,6 +42,7 @@ class ViewManager(ctk.CTkFrame):
             "arbol_digital": ArbolDigitalView,
             "arbol_trie": ArbolTrieView,
             "arbol_multiple": ArbolMultipleView,
+            "huffman": HuffmanView,
             "grafos": GrafosView,
         }
 
@@ -88,6 +90,7 @@ class ViewManager(ctk.CTkFrame):
             "arbol_digital": "Árbol Digital",
             "arbol_trie": "Árbol Trie",
             "arbol_multiple": "Residuos Múltiples",
+            "huffman": "Árboles de Huffman",
             "grafos": "Grafos",
         }
         crumbs = [LABELS.get(k, k) for k in self._history]
