@@ -58,6 +58,7 @@ class ArbolTrieView(BaseView):
         self._is_animating = False
         self._insert_queue = []
         self._insert_index = 0
+        self._pending_action = None
         self._build_ui()
 
     def _build_ui(self):
@@ -137,6 +138,8 @@ class ArbolTrieView(BaseView):
             command=self._on_search
         )
         self._btn_search.pack(side="left", padx=(0,8))
+        self._btn_delete = ctk.CTkButton(sr, text="Eliminar", width=100, height=34, fg_color="#C62828", hover_color="#8E0000", text_color="white", command=self._on_delete)
+        self._btn_delete.pack(side="left", padx=(0,8))
         self._btn_reset = ctk.CTkButton(
             sr, text="Reiniciar", width=110, height=34,
             fg_color=("gray70","gray30"),
@@ -186,8 +189,20 @@ class ArbolTrieView(BaseView):
         self._error_label.pack(fill="x")
         self._error_box.pack_forget()
 
-        container, self._canvas = build_scrollable_canvas(self.content)
-        container.pack(fill="both", expand=True, padx=10, pady=(0,10))
+        workspace = ctk.CTkFrame(self.content, fg_color="transparent")
+        workspace.pack(fill="both", expand=True, padx=10, pady=(0,10))
+        tree_container, self._canvas = build_scrollable_canvas(workspace)
+        tree_container.pack(side="left", fill="both", expand=True, padx=(0,8))
+        sidebar = ctk.CTkFrame(workspace, width=300, corner_radius=12, fg_color=("gray92","gray17"), border_width=2, border_color=("gray78","gray30"))
+        sidebar.pack(side="right", fill="y")
+        sidebar.pack_propagate(False)
+        ctk.CTkLabel(sidebar, text="Tabla de caracteres", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(fill="x", padx=10, pady=(10,6))
+        self._table_frame = ctk.CTkScrollableFrame(sidebar, height=210, fg_color="transparent")
+        self._table_frame.pack(fill="x", padx=8, pady=(0,8))
+        ctk.CTkLabel(sidebar, text="Historial de construcción y búsqueda", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(fill="x", padx=10, pady=(4,6))
+        self._history_box = ctk.CTkTextbox(sidebar, height=220, font=ctk.CTkFont(family="Consolas", size=11), wrap="word")
+        self._history_box.pack(fill="both", expand=True, padx=10, pady=(0,10))
+        self._history_box.configure(state="disabled")
         self._show_placeholder()
 
     def _show_error(self, msg):
@@ -206,9 +221,35 @@ class ArbolTrieView(BaseView):
         for w in (
             self._manual_entry, self._btn_generate, self._btn_clear,
             self._btn_save, self._btn_load, self._search_entry,
-            self._btn_search, self._btn_reset
+            self._btn_search, self._btn_delete, self._btn_reset
         ):
             w.configure(state=state)
+
+    def _draw_level_labels(self):
+        self._canvas.delete("level_labels")
+        seen=set()
+        def walk(node, depth):
+            if node is None: return
+            items=self._tree_items.get(id(node))
+            if items and depth not in seen:
+                self._canvas.create_text(18, items["y"], text=f"Nivel {depth}", font=("Consolas",10,"bold"), fill="#64748B", anchor="w", tags="level_labels")
+                seen.add(depth)
+            for child in self._get_children(node): walk(child, depth+1)
+        walk(self._tree_root,0)
+
+    def _refresh_character_table(self):
+        for w in self._table_frame.winfo_children(): w.destroy()
+        for idx,ch in enumerate(self._data,1):
+            disp="espacio" if ch=="_" else ch
+            row=ctk.CTkFrame(self._table_frame,height=28,corner_radius=5,fg_color=("gray88","gray22") if idx%2 else ("gray94","gray17"))
+            row.pack(fill="x",pady=1); row.pack_propagate(False)
+            ctk.CTkLabel(row,text=str(idx),width=28,font=ctk.CTkFont(size=11),anchor="center").pack(side="left")
+            ctk.CTkLabel(row,text=disp,width=58,font=ctk.CTkFont(family="Consolas",size=11,weight="bold"),anchor="w").pack(side="left")
+            ctk.CTkLabel(row,text=str(codigo(" " if ch=="_" else ch)),width=42,font=ctk.CTkFont(family="Consolas",size=11),anchor="center").pack(side="left")
+            ctk.CTkLabel(row,text=bits(" " if ch=="_" else ch),font=ctk.CTkFont(family="Consolas",size=11),anchor="w").pack(side="left")
+
+    def _add_history(self,text):
+        self._history_box.configure(state="normal"); self._history_box.insert("end",text+"\n"); self._history_box.see("end"); self._history_box.configure(state="disabled")
 
     def _show_placeholder(self):
         self._tree_items = {}
@@ -241,6 +282,9 @@ class ArbolTrieView(BaseView):
         self._tree_root = None
         self._insert_queue = list(self._data)
         self._insert_index = 0
+        self._history_box.configure(state="normal")
+        self._history_box.delete("1.0", "end")
+        self._history_box.configure(state="disabled")
         self._manual_entry.delete(0, "end")
         self._clear_error()
         self._set_controls(True)
@@ -261,16 +305,17 @@ class ArbolTrieView(BaseView):
         ch = self._insert_queue[self._insert_index]
         inserted = self._insert_character(ch)
         self._render_tree()
+        self._refresh_character_table()
         code = codigo(" " if ch == "_" else ch)
         binary = bits(" " if ch == "_" else ch)
 
         action = "insertado" if inserted else "ya estaba en el árbol"
-        self._status_label.configure(
-            text=(
-                f"Paso {self._insert_index + 1}/{len(self._insert_queue)}: "
-                f"carácter «{ch}» | código {code} | binario {binary} | {action}"
-            )
+        message=(
+            f"Paso {self._insert_index + 1}/{len(self._insert_queue)}: "
+            f"carácter «{ch}» | código {code} | binario {binary} | {action}"
         )
+        self._status_label.configure(text=message)
+        self._add_history(message)
         self._insert_index += 1
         self._anim_job = self.after(
             int(self._speed_slider.get()), self._animate_insert
@@ -360,6 +405,7 @@ class ArbolTrieView(BaseView):
             self._get_style, radius=28
         )
         self._draw_branch_labels()
+        self._draw_level_labels()
 
     def _draw_branch_labels(self):
         self._canvas.delete("branch_bits")
@@ -400,6 +446,13 @@ class ArbolTrieView(BaseView):
             return None
         return simbolo(raw)
 
+    def _on_delete(self):
+        if self._is_animating or self._tree_root is None: return
+        target=self._get_target()
+        if target is None: return
+        self._pending_action="delete"
+        self._begin_search(target)
+
     def _on_search(self):
         if self._is_animating or self._tree_root is None:
             if self._tree_root is None:
@@ -410,6 +463,7 @@ class ArbolTrieView(BaseView):
             return
 
         self._cancel_animation()
+        self._pending_action="search"
         self._render_tree()
         self._set_controls(True)
         self._clear_error()
@@ -418,48 +472,44 @@ class ArbolTrieView(BaseView):
         self._search_recursive(self._tree_root, target, target_bits, 0)
 
     def _search_recursive(self, node, target, target_bits, depth):
+        if not self._is_animating:
+            return
         if node is None:
             self._finish_not_found(target, target_bits)
             return
-        items = self._tree_items.get(id(node))
+
+        items=self._tree_items.get(id(node))
         if items:
-            self._canvas.itemconfig(
-                items["oval"],
-                fill=_COLOR_VISITING[0],
-                outline=_COLOR_VISITING[1]
-            )
+            self._canvas.itemconfig(items["oval"], fill=_COLOR_VISITING[0], outline=_COLOR_VISITING[1])
 
         if isinstance(node, _Leaf):
             if node.key == target:
                 if items:
-                    self._canvas.itemconfig(
-                        items["oval"],
-                        fill=_COLOR_FOUND[0],
-                        outline=_COLOR_FOUND[1]
-                    )
-                self._is_animating = False
-                self._set_controls(False)
-                self._status_label.configure(
-                    text=f"Encontrado: «{target}» | código {codigo(' ' if target == '_' else target)} | binario {target_bits}"
-                )
+                    self._canvas.itemconfig(items["oval"], fill=_COLOR_FOUND[0], outline=_COLOR_FOUND[1])
+                code=codigo(" " if target=="_" else target)
+                if self._pending_action == "delete":
+                    self._status_label.configure(text=f"Encontrado: «{target}» | código {code} | binario {target_bits} | nivel {depth} | Eliminando...")
+                    self._add_history(f"Eliminación: «{target}» encontrado en nivel {depth}.")
+                    self._anim_job=self.after(int(self._speed_slider.get()), lambda:self._finish_delete(target))
+                    return
+                self._status_label.configure(text=f"Encontrado: «{target}» | código {code} | binario {target_bits} | nivel {depth}")
+                self._add_history(f"Búsqueda: «{target}» encontrado en nivel {depth}.")
+                self._is_animating=False; self._pending_action=None; self._set_controls(False)
                 return
             self._finish_not_found(target, target_bits)
             return
 
-        bit = target_bits[depth]
-        self._status_label.configure(
-            text=(
-                f"Paso {depth + 1}: nodo interno | bit {bit} | "
-                f"avanzo a {'izquierda' if bit == '0' else 'derecha'}"
-            )
-        )
-        next_node = node.left if bit == "0" else node.right
-        self._anim_job = self.after(
-            int(self._speed_slider.get()),
-            lambda: self._search_recursive(
-                next_node, target, target_bits, depth + 1
-            )
-        )
+        if depth >= len(target_bits):
+            self._finish_not_found(target, target_bits)
+            return
+
+        bit=target_bits[depth]
+        direction="izquierda" if bit=="0" else "derecha"
+        message=f"Paso {depth+1}: nivel {depth} | nodo interno | bit {bit} | avanzo a {direction}"
+        self._status_label.configure(text=message)
+        self._add_history(message)
+        next_node=node.left if bit=="0" else node.right
+        self._anim_job=self.after(int(self._speed_slider.get()), lambda:self._search_recursive(next_node,target,target_bits,depth+1))
 
     def _finish_not_found(self, target, target_bits):
         self._is_animating = False
@@ -467,6 +517,16 @@ class ArbolTrieView(BaseView):
         self._status_label.configure(
             text=f"«{target}» no fue encontrado | binario {target_bits}"
         )
+
+    def _finish_delete(self,target):
+        self._phrase="".join(ch for ch in self._phrase if simbolo(ch)!=target)
+        self._data=[simbolo(ch) for ch in self._phrase]
+        self._tree_root=None
+        for ch in self._data: self._insert_character(ch)
+        self._render_tree(); self._refresh_character_table()
+        self._add_history(f"Eliminado: «{target}». Árbol actualizado.")
+        self._status_label.configure(text=f"El carácter «{target}» fue eliminado correctamente.")
+        self._is_animating=False; self._pending_action=None; self._set_controls(False)
 
     def _on_reset_search(self):
         self._cancel_animation()
