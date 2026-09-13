@@ -41,7 +41,7 @@ class SecuencialView(BaseView):
 
         # Row 2: Cantidad de registros [ ] Tamaño de clave [ ] [Generar Estructura] [Limpiar]
         row2 = ctk.CTkFrame(inner, fg_color='transparent')
-        row2.pack(fill='x', pady=(0, 10))
+        row2.pack(fill='x', pady=(0, 40))
         self._size_entry = self._entry_with_label(row2, 'Cantidad de registros:', str(_DEFAULT_SIZE))
         self._key_size_entry = self._entry_with_label(row2, 'Tamaño de clave:', str(_DEFAULT_KEY_SIZE))
         self._btn_structure = ctk.CTkButton(row2, text='Generar Estructura', width=140, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate_structure)
