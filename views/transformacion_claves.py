@@ -137,10 +137,11 @@ class TransformacionClavesView(BaseView):
         if size > _MAX_SIZE:
             self._show_error(f'El tamaño máximo de la tabla es {_MAX_SIZE}.')
             return None
+        min_key = 1 if ks == 1 else (10 ** (ks - 1))
         max_key = (10 ** ks) - 1
-        return ks, size, max_key
+        return ks, size, min_key, max_key
 
-    def _parse_manual_values(self, max_key):
+    def _parse_manual_values(self, min_key, max_key, key_size):
         text = self._manual_entry.get().strip()
         if not text:
             self._show_error('Ingresa al menos un valor.')
@@ -152,8 +153,8 @@ class TransformacionClavesView(BaseView):
             except ValueError:
                 self._show_error(f'«{p}» no es un número válido.')
                 return None
-            if not 1 <= v <= max_key:
-                self._show_error(f'El valor {v} debe estar entre 1 y {max_key}.')
+            if not (min_key <= v <= max_key):
+                self._show_error(f'El valor {v} debe tener exactamente {key_size} dígitos (entre {min_key} y {max_key}).')
                 return None
             vals.append(v)
         return vals
@@ -231,7 +232,7 @@ class TransformacionClavesView(BaseView):
         cfg = self._validate_configuration()
         if cfg is None:
             return
-        _, size, _ = cfg
+        _, size, _, _ = cfg
         if self._table_created:
             self._show_error('La estructura ya fue generada. Presiona Limpiar para crear una nueva.')
             return
@@ -254,7 +255,7 @@ class TransformacionClavesView(BaseView):
         cfg = self._validate_configuration()
         if cfg is None:
             return
-        _, size, max_key = cfg
+        ks, size, min_key, max_key = cfg
         if len(self._table) != size:
             self._show_error(f'La tabla ya fue creada con tamaño {len(self._table)}. Presiona Limpiar para crear una nueva tabla.')
             return
@@ -266,9 +267,9 @@ class TransformacionClavesView(BaseView):
             self._show_error('La tabla ya está llena. Presiona Limpiar para comenzar una nueva tabla.')
             return
         if self._mode_var.get() == 'Aleatorio':
-            new_keys = [random.randint(1, max_key) for _ in range(remaining)]
+            new_keys = [random.randint(min_key, max_key) for _ in range(remaining)]
         else:
-            new_keys = self._parse_manual_values(max_key)
+            new_keys = self._parse_manual_values(min_key, max_key, ks)
             if new_keys is None:
                 return
             if len(new_keys) > remaining:
@@ -357,7 +358,14 @@ class TransformacionClavesView(BaseView):
             self._show_error('Ingresa la clave objetivo.')
             return None
         try:
-            return int(raw)
+            val = int(raw)
+            cfg = self._validate_configuration()
+            if cfg is not None:
+                ks, _, min_key, max_key = cfg
+                if not (min_key <= val <= max_key):
+                    self._show_error(f'La clave debe tener exactamente {ks} dígitos (entre {min_key} y {max_key}).')
+                    return None
+            return val
         except ValueError:
             self._show_error('La clave debe ser un número entero.')
             return None
@@ -402,20 +410,20 @@ class TransformacionClavesView(BaseView):
         self._pending_action = None
 
     def _set_probe_row(self, index, color):
-        if 0 <= index < len(self._table_rows):
-            row = self._table_rows[index]
+        if not isinstance(self._table_rows, dict) or index not in self._table_rows:
+            self._render_table(active_probe=index)
+        row = self._table_rows.get(index) if isinstance(self._table_rows, dict) else (self._table_rows[index] if 0 <= index < len(self._table_rows) else None)
+        if row is not None and hasattr(row, 'configure'):
             row.configure(fg_color=color)
-            try:
-                self._scroll_frame._parent_canvas.yview_moveto(max(0.0, min(1.0, index / max(1, len(self._table_rows)))))
-            except Exception:
-                pass
 
     def _step_hash_animation(self, target, step, probes):
         if not self._is_animating:
             return
         if step >= len(probes):
-            for row in self._table_rows:
-                row.configure(fg_color=('#FEE2E2', '#450A0A'))
+            rows = self._table_rows.values() if isinstance(self._table_rows, dict) else self._table_rows
+            for row in rows:
+                if row is not None:
+                    row.configure(fg_color=('#FEE2E2', '#450A0A'))
             action = 'Eliminación' if self._pending_action == 'delete' else 'Búsqueda'
             self._status_label.configure(text=f'{action}: {target} no fue encontrada en la tabla hash.')
             if self._pending_action == 'delete':
@@ -429,39 +437,40 @@ class TransformacionClavesView(BaseView):
         self._set_probe_row(idx, ('#FB923C', '#9A3412'))
         initial = self._hash(target)
         slot = self._table[idx]
+        display_idx = idx + 1
         if self._collision_method == 'Encadenado':
             bucket = slot or []
             if target in bucket:
                 self._set_probe_row(idx, ('#4ADE80', '#166534'))
                 if self._pending_action == 'delete':
-                    self._status_label.configure(text=f'{target} encontrada en el índice {idx} dentro de la cadena. Eliminando... | Hash inicial={initial}')
+                    self._status_label.configure(text=f'{target} encontrada en el índice {display_idx} dentro de la cadena. Eliminando... | Hash inicial={initial + 1}')
                     self._is_animating = True
                     self._anim_job = self.after(int(self._speed_slider.get()), lambda target=target, idx=idx: self._delete_found_hash_key(target, idx, True))
                     return
                 else:
-                    self._status_label.configure(text=f'{target} encontrada en el índice {idx} dentro de la cadena. | Paso {step + 1}')
+                    self._status_label.configure(text=f'{target} encontrada en el índice {display_idx} dentro de la cadena. | Paso {step + 1}')
                 self._is_animating = False
                 self._pending_action = None
                 self._set_hash_controls_state('normal')
                 return
-            self._status_label.configure(text=f'Paso {step + 1}: hash({target})={initial} → revisando cadena en índice {idx}. La clave no está aquí.')
+            self._status_label.configure(text=f'Paso {step + 1}: hash({target})={initial + 1} → revisando cadena en índice {display_idx}. La clave no está aquí.')
         else:
             if slot == target:
                 self._set_probe_row(idx, ('#4ADE80', '#166534'))
                 if self._pending_action == 'delete':
-                    self._status_label.configure(text=f'{target} encontrada en índice {idx}. Eliminando... | Hash inicial={initial}')
+                    self._status_label.configure(text=f'{target} encontrada en índice {display_idx}. Eliminando... | Hash inicial={initial + 1}')
                     self._is_animating = True
                     self._anim_job = self.after(int(self._speed_slider.get()), lambda target=target, idx=idx: self._delete_found_hash_key(target, idx, False))
                     return
                 else:
-                    self._status_label.configure(text=f'{target} encontrada en índice {idx}. | Hash inicial={initial} | Paso {step + 1}')
+                    self._status_label.configure(text=f'{target} encontrada en índice {display_idx}. | Hash inicial={initial + 1} | Paso {step + 1}')
                 self._is_animating = False
                 self._pending_action = None
                 self._set_hash_controls_state('normal')
                 return
             if slot is None:
                 self._set_probe_row(idx, ('#FEE2E2', '#450A0A'))
-                self._status_label.configure(text=f'Paso {step + 1}: índice {idx} está vacío → {target} no puede estar más adelante en esta secuencia.')
+                self._status_label.configure(text=f'Paso {step + 1}: índice {display_idx} está vacío → {target} no puede estar más adelante en esta secuencia.')
                 was_delete = self._pending_action == 'delete'
                 self._is_animating = False
                 self._pending_action = None
@@ -469,48 +478,101 @@ class TransformacionClavesView(BaseView):
                     self._show_error(f'La clave {target} no fue encontrada; no se eliminó nada.')
                 self._set_hash_controls_state('normal')
                 return
-            self._status_label.configure(text=f'Paso {step + 1}: índice {idx} contiene {slot} ≠ {target}. Método {self._collision_method or "sin colisión"}, continuando.')
+            self._status_label.configure(text=f'Paso {step + 1}: índice {display_idx} contiene {slot} ≠ {target}. Método {self._collision_method or "sin colisión"}, continuando.')
         self._anim_job = self.after(int(self._speed_slider.get()), lambda: self._step_hash_animation(target, step + 1, probes))
 
     def _reset_search_rows(self):
-        for row in self._table_rows:
-            if hasattr(row, '_default_bg'):
+        rows = self._table_rows.values() if isinstance(self._table_rows, dict) else self._table_rows
+        for row in rows:
+            if row is not None and hasattr(row, '_default_bg'):
                 row.configure(fg_color=row._default_bg)
 
-    def _render_table(self):
+    def _render_table(self, active_probe=None):
         for w in self._scroll_frame.winfo_children():
             w.destroy()
-        self._table_rows = []
+        self._table_rows = {}
         if not self._table:
             return
-        header = ctk.CTkFrame(self._scroll_frame, fg_color='transparent')
-        header.pack(fill='x', padx=6, pady=(8, 4))
-        for text, width in [('Índice', 80), ('Clave', 130), ('Hash', 80), ('Estado', 180)]:
-            ctk.CTkLabel(header, text=text, width=width, font=ctk.CTkFont(size=13, weight='bold')).pack(side='left', padx=(8, 0))
-        for index, slot in enumerate(self._table):
+
+        table_box = ctk.CTkFrame(
+            self._scroll_frame,
+            corner_radius=10,
+            fg_color=('gray95', 'gray16'),
+            border_width=2,
+            border_color=('gray75', 'gray30')
+        )
+        table_box.pack(fill='x', padx=30, pady=15)
+
+        header = ctk.CTkFrame(table_box, corner_radius=0, fg_color=('gray85', 'gray24'), height=40)
+        header.pack(fill='x')
+        header.pack_propagate(False)
+
+        ctk.CTkLabel(header, text='Indice', font=ctk.CTkFont(size=14, weight='bold'), text_color=('black', 'white'), width=140, anchor='center').pack(side='left')
+        ctk.CTkFrame(header, width=2, fg_color=('gray75', 'gray35')).pack(side='left', fill='y')
+        ctk.CTkLabel(header, text='Clave', font=ctk.CTkFont(size=14, weight='bold'), text_color=('black', 'white'), anchor='center').pack(side='left', fill='x', expand=True)
+
+        ctk.CTkFrame(table_box, height=2, fg_color=('gray75', 'gray35')).pack(fill='x')
+
+        total_size = len(self._table)
+
+        req_indices = set()
+        req_indices.add(0)
+        req_indices.add(total_size - 1)
+
+        for i, slot in enumerate(self._table):
             occupied = (slot is not None and (slot != [] if isinstance(slot, list) else True))
-            bg = ('gray88', 'gray22') if index % 2 == 0 else ('gray94', 'gray17')
-            row = ctk.CTkFrame(self._scroll_frame, height=40, corner_radius=8, fg_color=bg)
+            if occupied:
+                req_indices.add(i)
+
+        if active_probe is not None and 0 <= active_probe < total_size:
+            req_indices.add(active_probe)
+
+        sorted_indices = sorted(req_indices)
+
+        rows_to_render = []
+        for i, slot_idx in enumerate(sorted_indices):
+            if i > 0:
+                prev_idx = sorted_indices[i - 1]
+                diff = slot_idx - prev_idx
+                if diff == 2:
+                    rows_to_render.append((prev_idx + 1, None))
+                elif diff > 2:
+                    rows_to_render.append((None, None))
+
+            rows_to_render.append((slot_idx, self._table[slot_idx]))
+
+        for idx_row, (slot_idx, slot_val) in enumerate(rows_to_render):
+            if idx_row > 0:
+                ctk.CTkFrame(table_box, height=1, fg_color=('gray80', 'gray30')).pack(fill='x')
+
+            bg = ('gray90', 'gray20') if idx_row % 2 == 0 else ('gray94', 'gray17')
+            row = ctk.CTkFrame(table_box, height=38, corner_radius=0, fg_color=bg)
             row._default_bg = bg
-            row.pack(fill='x', padx=6, pady=2)
+            row.pack(fill='x')
             row.pack_propagate(False)
-            if self._collision_method == 'Encadenado':
-                bucket = slot if isinstance(slot, list) else []
-                key_text = ', '.join(map(str, bucket)) if bucket else '-'
-                hash_text = str(index) if bucket else '-'
-                status = 'Encadenado' if bucket else 'Vacío'
-            elif occupied:
-                key_text = str(slot)
-                hash_text = str(self._hash(slot))
-                status = 'Ocupado' if self._hash(slot) == index else 'Colisión resuelta'
+
+            if slot_idx is None:
+                idx_str = '⋮'
+                key_text = '⋮'
+                occupied = False
             else:
-                key_text = hash_text = '-'
-                status = 'Vacío'
-            self._table_rows.append(row)
-            ctk.CTkLabel(row, text=str(index), width=80, font=ctk.CTkFont(family='Consolas', size=14), anchor='center').pack(side='left', padx=(8, 0))
-            ctk.CTkLabel(row, text=key_text, width=130, font=ctk.CTkFont(family='Consolas', size=14, weight='bold' if occupied else 'normal'), anchor='w').pack(side='left')
-            ctk.CTkLabel(row, text=hash_text, width=80, font=ctk.CTkFont(family='Consolas', size=14), anchor='center').pack(side='left')
-            ctk.CTkLabel(row, text=status, font=ctk.CTkFont(size=13), anchor='w').pack(side='left')
+                idx_str = str(slot_idx + 1)
+                occupied = (slot_val is not None and (slot_val != [] if isinstance(slot_val, list) else True))
+                if self._collision_method == 'Encadenado':
+                    bucket = slot_val if isinstance(slot_val, list) else []
+                    key_text = ', '.join(map(str, bucket)) if bucket else ''
+                elif occupied:
+                    key_text = str(slot_val)
+                else:
+                    key_text = ''
+
+            ctk.CTkLabel(row, text=idx_str, font=ctk.CTkFont(family='Consolas', size=14, weight='bold'), text_color=('gray30', 'gray75') if idx_str == '⋮' else ('black', 'white'), width=140, anchor='center').pack(side='left')
+            ctk.CTkFrame(row, width=2, fg_color=('gray75', 'gray35')).pack(side='left', fill='y')
+            ctk.CTkLabel(row, text=key_text, font=ctk.CTkFont(family='Consolas', size=14, weight='bold' if occupied else 'normal'), text_color=('black', 'white') if occupied else ('gray40', 'gray60'), anchor='center').pack(side='left', fill='x', expand=True)
+
+            if slot_idx is not None:
+                self._table_rows[slot_idx] = row
+
         if self._pending_key is not None:
             ctk.CTkLabel(self._scroll_frame, text=f'La clave {self._pending_key} está esperando una solución de colisión.', font=ctk.CTkFont(size=13, weight='bold'), text_color=('#cc7700', '#ffaa33')).pack(pady=12)
 

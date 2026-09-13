@@ -94,7 +94,7 @@ class SecuencialView(BaseView):
         self._error_label = ctk.CTkLabel(self._error_box, text='', font=ctk.CTkFont(size=13, weight='bold'), text_color=('#991B1B', '#FCA5A5'), anchor='w', padx=12, pady=6)
         self._error_label.pack(fill='x')
         self._error_box.pack_forget()
-        self._scroll_frame = ctk.CTkFrame(self.content, corner_radius=12, fg_color=('gray96', 'gray14'), border_width=2, border_color=('gray78', 'gray30'))
+        self._scroll_frame = ctk.CTkScrollableFrame(self.content, corner_radius=12, fg_color=('gray96', 'gray14'), border_width=2, border_color=('gray78', 'gray30'))
         self._scroll_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
         self._show_placeholder()
         self._on_mode_change(self._mode_var.get())
@@ -123,10 +123,11 @@ class SecuencialView(BaseView):
         if size > _MAX_ELEMENTS:
             self._show_error(f'La cantidad máxima de registros es {_MAX_ELEMENTS:,}.')
             return None
+        min_key = 1 if key_size == 1 else (10 ** (key_size - 1))
         max_key = (10 ** key_size) - 1
-        return key_size, size, max_key
+        return key_size, size, min_key, max_key
 
-    def _parse_manual_values(self, max_key):
+    def _parse_manual_values(self, min_key, max_key, key_size):
         text = self._manual_entry.get().strip()
         if not text:
             self._show_error('Ingresa al menos un valor.')
@@ -138,8 +139,8 @@ class SecuencialView(BaseView):
             except ValueError:
                 self._show_error(f'«{part}» no es un número entero válido.')
                 return None
-            if not 1 <= value <= max_key:
-                self._show_error(f'El valor {value} debe estar entre 1 y {max_key}.')
+            if not (min_key <= value <= max_key):
+                self._show_error(f'El valor {value} debe tener exactamente {key_size} dígitos (entre {min_key} y {max_key}).')
                 return None
             values.append(value)
         return values
@@ -150,7 +151,7 @@ class SecuencialView(BaseView):
         cfg = self._validate_configuration()
         if cfg is None:
             return
-        _, size, _ = cfg
+        _, size, _, _ = cfg
         if self._structure_created:
             self._show_error('La estructura ya fue generada. Presiona Limpiar para crear una nueva.')
             return
@@ -171,12 +172,15 @@ class SecuencialView(BaseView):
         if len(self._data) >= self._capacity:
             self._show_error('La estructura ya está llena.')
             return
-        _, _, max_key = self._validate_configuration()
+        cfg = self._validate_configuration()
+        if cfg is None:
+            return
+        key_size, _, min_key, max_key = cfg
         if self._mode_var.get() == 'Aleatorio':
             remaining = self._capacity - len(self._data)
-            new_values = [random.randint(1, max_key) for _ in range(remaining)]
+            new_values = [random.randint(min_key, max_key) for _ in range(remaining)]
         else:
-            new_values = self._parse_manual_values(max_key)
+            new_values = self._parse_manual_values(min_key, max_key, key_size)
             if new_values is None:
                 return
             remaining = self._capacity - len(self._data)
@@ -208,25 +212,68 @@ class SecuencialView(BaseView):
         self._cell_frames.clear()
         if not self._structure_created:
             return
-        header = ctk.CTkFrame(self._scroll_frame, fg_color='transparent')
-        header.pack(fill='x', padx=12, pady=(10, 4))
-        ctk.CTkLabel(header, text='Registros', font=ctk.CTkFont(size=13, weight='bold')).pack(side='left')
-        grid = ctk.CTkFrame(self._scroll_frame, fg_color='transparent')
-        grid.pack(fill='x', padx=10, pady=8)
-        columns = 5
-        for i in range(columns):
-            grid.grid_columnconfigure(i, weight=1)
-        for idx in range(self._capacity):
-            filled = idx < len(self._data)
-            value = self._data[idx] if filled else 'Vacío'
-            bg = ('gray88', 'gray22') if idx % 2 == 0 else ('gray94', 'gray17')
-            row = ctk.CTkFrame(grid, height=56, corner_radius=8, fg_color=bg, border_width=1, border_color=('gray78', 'gray30'))
+
+        table_box = ctk.CTkFrame(
+            self._scroll_frame,
+            corner_radius=10,
+            fg_color=('gray95', 'gray16'),
+            border_width=2,
+            border_color=('gray75', 'gray30')
+        )
+        table_box.pack(fill='x', padx=30, pady=15)
+
+        header = ctk.CTkFrame(table_box, corner_radius=0, fg_color=('gray85', 'gray24'), height=40)
+        header.pack(fill='x')
+        header.pack_propagate(False)
+
+        ctk.CTkLabel(header, text='Indice', font=ctk.CTkFont(size=14, weight='bold'), text_color=('black', 'white'), width=140, anchor='center').pack(side='left')
+        ctk.CTkFrame(header, width=2, fg_color=('gray75', 'gray35')).pack(side='left', fill='y')
+        ctk.CTkLabel(header, text='Clave', font=ctk.CTkFont(size=14, weight='bold'), text_color=('black', 'white'), anchor='center').pack(side='left', fill='x', expand=True)
+
+        ctk.CTkFrame(table_box, height=2, fg_color=('gray75', 'gray35')).pack(fill='x')
+
+        n_filled = len(self._data)
+        total_cap = self._capacity
+
+        rows_to_render = []
+        if n_filled == 0:
+            if total_cap <= 3:
+                for i in range(total_cap):
+                    rows_to_render.append((str(i + 1), '', None, False))
+            else:
+                rows_to_render.append(('1', '', None, False))
+                rows_to_render.append(('⋮', '', None, False))
+                rows_to_render.append((str(total_cap), '', None, False))
+        else:
+            for i in range(n_filled):
+                rows_to_render.append((str(i + 1), str(self._data[i]), i, True))
+            
+            remaining = total_cap - n_filled
+            if remaining > 0:
+                if remaining <= 2:
+                    for i in range(n_filled, total_cap):
+                        rows_to_render.append((str(i + 1), '', None, False))
+                else:
+                    rows_to_render.append((str(n_filled + 1), '', None, False))
+                    rows_to_render.append(('⋮', '', None, False))
+                    rows_to_render.append((str(total_cap), '', None, False))
+
+        for idx_row, (idx_str, val_str, data_idx, is_real_cell) in enumerate(rows_to_render):
+            if idx_row > 0:
+                ctk.CTkFrame(table_box, height=1, fg_color=('gray80', 'gray30')).pack(fill='x')
+
+            bg = ('gray90', 'gray20') if idx_row % 2 == 0 else ('gray94', 'gray17')
+            row = ctk.CTkFrame(table_box, height=38, corner_radius=0, fg_color=bg)
             row._default_bg = bg
-            row.grid(row=idx // columns, column=idx % columns, padx=5, pady=5, sticky='nsew')
-            row.grid_propagate(False)
-            ctk.CTkLabel(row, text=f'Índice {idx + 1}', font=ctk.CTkFont(size=11, weight='bold'), text_color=('gray40', 'gray65')).pack(pady=(5, 0))
-            ctk.CTkLabel(row, text=str(value), font=ctk.CTkFont(family='Consolas', size=14, weight='bold')).pack(pady=(2, 0))
-            self._cell_frames.append(row)
+            row.pack(fill='x')
+            row.pack_propagate(False)
+
+            ctk.CTkLabel(row, text=idx_str, font=ctk.CTkFont(family='Consolas', size=14, weight='bold'), text_color=('gray30', 'gray75') if idx_str == '⋮' else ('black', 'white'), width=140, anchor='center').pack(side='left')
+            ctk.CTkFrame(row, width=2, fg_color=('gray75', 'gray35')).pack(side='left', fill='y')
+            ctk.CTkLabel(row, text=val_str, font=ctk.CTkFont(family='Consolas', size=14, weight='bold' if val_str not in ('', '⋮') else 'normal'), text_color=('gray40', 'gray60') if val_str in ('', '⋮') else ('black', 'white'), anchor='center').pack(side='left', fill='x', expand=True)
+
+            if is_real_cell and data_idx is not None:
+                self._cell_frames.append(row)
 
     def _on_speed_change(self, value):
         self._speed_label.configure(text=f'{int(value)} ms')
@@ -240,7 +287,7 @@ class SecuencialView(BaseView):
 
     def _reset_search_visuals(self):
         for row in self._cell_frames:
-            if hasattr(row, '_default_bg'):
+            if row is not None and hasattr(row, '_default_bg'):
                 row.configure(fg_color=row._default_bg)
 
     def _get_target(self):
@@ -249,7 +296,14 @@ class SecuencialView(BaseView):
             self._show_error('Ingresa el valor objetivo.')
             return None
         try:
-            return int(raw)
+            val = int(raw)
+            cfg = self._validate_configuration()
+            if cfg is not None:
+                key_size, _, min_key, max_key = cfg
+                if not (min_key <= val <= max_key):
+                    self._show_error(f'El valor a buscar debe tener exactamente {key_size} dígitos (entre {min_key} y {max_key}).')
+                    return None
+            return val
         except ValueError:
             self._show_error('El valor a buscar debe ser un número entero.')
             return None
@@ -279,7 +333,8 @@ class SecuencialView(BaseView):
             return
         if index >= len(self._data):
             for row in self._cell_frames[:len(self._data)]:
-                row.configure(fg_color=('#FEE2E2', '#450A0A'))
+                if row is not None:
+                    row.configure(fg_color=('#FEE2E2', '#450A0A'))
             action = 'Eliminación' if self._pending_action == 'delete' else 'Búsqueda'
             self._status_label.configure(text=f'{action}: {target} no fue encontrado después de revisar {len(self._data)} registros.')
             if self._pending_action == 'delete':
