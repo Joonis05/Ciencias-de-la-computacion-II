@@ -249,14 +249,11 @@ class SecuencialView(BaseView):
                 rows_to_render.append((str(i + 1), str(self._data[i]), i, True))
             
             remaining = total_cap - n_filled
-            if remaining > 0:
-                if remaining <= 2:
-                    for i in range(n_filled, total_cap):
-                        rows_to_render.append((str(i + 1), '', None, False))
-                else:
-                    rows_to_render.append((str(n_filled + 1), '', None, False))
-                    rows_to_render.append(('⋮', '', None, False))
-                    rows_to_render.append((str(total_cap), '', None, False))
+            if remaining == 1:
+                rows_to_render.append((str(total_cap), '', None, False))
+            elif remaining > 1:
+                rows_to_render.append(('⋮', '', None, False))
+                rows_to_render.append((str(total_cap), '', None, False))
 
         for idx_row, (idx_str, val_str, data_idx, is_real_cell) in enumerate(rows_to_render):
             if idx_row > 0:
