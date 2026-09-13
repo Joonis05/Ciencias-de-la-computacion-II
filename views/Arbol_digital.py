@@ -53,11 +53,8 @@ class ArbolDigitalView(BaseView):
         self._is_animating = False
         self._insert_queue = []
         self._insert_index = 0
-<<<<<<< HEAD
-=======
         self._pending_action = None
         self._history_lines = []
->>>>>>> origin/2
         self._build_ui()
 
     def _build_ui(self):
@@ -146,16 +143,12 @@ class ArbolDigitalView(BaseView):
         )
         self._btn_search.pack(side="left", padx=(0, 8))
 
-<<<<<<< HEAD
-=======
         self._btn_delete = ctk.CTkButton(
             sr, text="Eliminar", width=100, height=34,
             fg_color="#C62828", hover_color="#8E0000",
             text_color="white", command=self._on_delete
         )
         self._btn_delete.pack(side="left", padx=(0, 8))
-
->>>>>>> origin/2
         self._btn_reset = ctk.CTkButton(
             sr, text="Reiniciar", width=110, height=34,
             fg_color=("gray70", "gray30"),
@@ -209,10 +202,6 @@ class ArbolDigitalView(BaseView):
         self._error_label.pack(fill="x")
         self._error_box.pack_forget()
 
-<<<<<<< HEAD
-        container, self._canvas = build_scrollable_canvas(self.content)
-        container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-=======
         workspace = ctk.CTkFrame(self.content, fg_color="transparent")
         workspace.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
@@ -246,8 +235,6 @@ class ArbolDigitalView(BaseView):
         )
         self._history_box.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         self._history_box.configure(state="disabled")
-
->>>>>>> origin/2
         self._show_placeholder()
 
     def _show_error(self, msg):
@@ -266,11 +253,7 @@ class ArbolDigitalView(BaseView):
         for widget in (
             self._manual_entry, self._btn_generate, self._btn_clear,
             self._btn_save, self._btn_load, self._search_entry,
-<<<<<<< HEAD
-            self._btn_search, self._btn_reset
-=======
             self._btn_search, self._btn_delete, self._btn_reset
->>>>>>> origin/2
         ):
             widget.configure(state=state)
 
@@ -300,10 +283,7 @@ class ArbolDigitalView(BaseView):
         self._tree_root = None
         self._insert_queue = list(self._data)
         self._insert_index = 0
-<<<<<<< HEAD
-=======
         self._clear_history()
->>>>>>> origin/2
         self._manual_entry.delete(0, "end")
         self._clear_error()
         self._set_controls(True)
@@ -325,17 +305,6 @@ class ArbolDigitalView(BaseView):
         ch = self._insert_queue[self._insert_index]
         self._insert_character(ch)
         self._render_tree()
-<<<<<<< HEAD
-
-        code = codigo(" " if ch == "_" else ch)
-        binary = bits(" " if ch == "_" else ch)
-        self._status_label.configure(
-            text=(
-                f"Paso {self._insert_index + 1}/{len(self._insert_queue)}: "
-                f"carácter «{ch}» | código {code} | binario {binary}"
-            )
-        )
-=======
         self._refresh_character_table(self._insert_index + 1)
 
         code = codigo(" " if ch == "_" else ch)
@@ -346,7 +315,6 @@ class ArbolDigitalView(BaseView):
         )
         self._status_label.configure(text=message)
         self._add_history(message)
->>>>>>> origin/2
 
         self._insert_index += 1
         self._anim_job = self.after(
@@ -403,10 +371,7 @@ class ArbolDigitalView(BaseView):
             self._get_style, radius=28
         )
         self._draw_branch_labels()
-<<<<<<< HEAD
-=======
         self._draw_level_labels()
-
 
     def _draw_level_labels(self):
         self._canvas.delete("level_labels")
@@ -425,7 +390,6 @@ class ArbolDigitalView(BaseView):
             walk(node.left, depth + 1)
             walk(node.right, depth + 1)
         walk(self._tree_root, 0)
->>>>>>> origin/2
 
     def _draw_branch_labels(self):
         self._canvas.delete("branch_bits")
@@ -461,8 +425,6 @@ class ArbolDigitalView(BaseView):
             "Escribe una palabra o frase y presiona «Añadir»."
         )
 
-<<<<<<< HEAD
-=======
     def _clear_history(self):
         self._history_lines = []
         self._history_box.configure(state="normal")
@@ -493,7 +455,6 @@ class ArbolDigitalView(BaseView):
             ctk.CTkLabel(row, text=str(code), width=42, font=ctk.CTkFont(family="Consolas", size=11), anchor="center").pack(side="left")
             ctk.CTkLabel(row, text=binary, font=ctk.CTkFont(family="Consolas", size=11), anchor="w").pack(side="left")
 
->>>>>>> origin/2
     def _get_target(self):
         raw = self._search_entry.get().lower()
         if raw == " ":
@@ -509,18 +470,24 @@ class ArbolDigitalView(BaseView):
             return None
         return raw
 
-<<<<<<< HEAD
-=======
     def _on_delete(self):
         if self._is_animating or self._tree_root is None:
             return
         target = self._get_target()
         if target is None:
             return
+        self._cancel_animation()
         self._pending_action = "delete"
-        self._begin_search(target)
+        self._render_tree()
+        self._clear_error()
+        self._set_controls(True)
+        self._is_animating = True
 
->>>>>>> origin/2
+        target_bits = bits(" " if target == "_" else target)
+        self._search_recursive(
+            self._tree_root, target, target_bits, 0
+        )
+
     def _on_search(self):
         if self._is_animating:
             return
@@ -532,10 +499,7 @@ class ArbolDigitalView(BaseView):
             return
 
         self._cancel_animation()
-<<<<<<< HEAD
-=======
         self._pending_action = "search"
->>>>>>> origin/2
         self._render_tree()
         self._clear_error()
         self._set_controls(True)
@@ -576,17 +540,6 @@ class ArbolDigitalView(BaseView):
                     fill=_COLOR_FOUND[0],
                     outline=_COLOR_FOUND[1]
                 )
-<<<<<<< HEAD
-            self._is_animating = False
-            self._set_controls(False)
-            self._status_label.configure(
-                text=(
-                    f"Encontrado: «{target}» | "
-                    f"Código: {codigo(' ' if target == '_' else target)} | "
-                    f"Binario: {target_bits}"
-                )
-            )
-=======
             code = codigo(" " if target == "_" else target)
             if self._pending_action == "delete":
                 self._status_label.configure(
@@ -602,7 +555,6 @@ class ArbolDigitalView(BaseView):
             )
             self._add_history(f"Búsqueda: «{target}» encontrado en nivel {depth}.")
             self._pending_action = None
->>>>>>> origin/2
             return
 
         if depth >= len(target_bits):
@@ -617,11 +569,7 @@ class ArbolDigitalView(BaseView):
         direction = "izquierda" if bit == "0" else "derecha"
         self._status_label.configure(
             text=(
-<<<<<<< HEAD
-                f"Paso {depth + 1}: nodo «{node.key}» | bit {bit} | "
-=======
                 f"Paso {depth + 1}: nodo «{node.key}» | nivel {depth} | bit {bit} | "
->>>>>>> origin/2
                 f"avanzo a {direction}"
             )
         )
@@ -633,8 +581,6 @@ class ArbolDigitalView(BaseView):
             )
         )
 
-<<<<<<< HEAD
-=======
     def _finish_delete(self, target):
         self._phrase = "".join(ch for ch in self._phrase if simbolo(ch) != target)
         self._data = [simbolo(ch) for ch in self._phrase]
@@ -652,7 +598,6 @@ class ArbolDigitalView(BaseView):
         self._pending_action = None
         self._set_controls(False)
 
->>>>>>> origin/2
     def _on_reset_search(self):
         self._cancel_animation()
         if self._tree_root is not None:
@@ -679,10 +624,7 @@ class ArbolDigitalView(BaseView):
         self._tree_root = None
         self._insert_queue = []
         self._insert_index = 0
-<<<<<<< HEAD
-=======
         self._clear_history()
->>>>>>> origin/2
         self._manual_entry.delete(0, "end")
         self._clear_error()
         self._status_label.configure(text="Estado: árbol limpiado.")
@@ -717,8 +659,4 @@ class ArbolDigitalView(BaseView):
 
     def destroy(self):
         self._cancel_animation()
-<<<<<<< HEAD
         super().destroy()
-=======
-        super().destroy()
->>>>>>> origin/2

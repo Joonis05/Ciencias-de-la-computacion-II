@@ -7,14 +7,8 @@ from views.base_view import BaseView
 from views.persistence import save_json, load_json
 from views.Tree_canvas import build_scrollable_canvas, draw_tree, show_placeholder
 
-<<<<<<< HEAD
-_COLOR_LEAF = ("#DCFCE7", "#15803D")      
-_COLOR_INTERNAL = ("#F1F5F9", "#475569")   
-
-=======
 _COLOR_LEAF = ("#DCFCE7", "#15803D")
 _COLOR_INTERNAL = ("#F1F5F9", "#475569")
->>>>>>> origin/2
 
 def format_char(ch: str) -> str:
     """Devuelve una representación legible para caracteres especiales como espacios."""
@@ -26,10 +20,6 @@ def format_char(ch: str) -> str:
         return "\\t (Tab)"
     return ch
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/2
 def format_char_short(ch: str) -> str:
     """Devuelve un formato muy corto para mostrar dentro del círculo del nodo."""
     if ch == " ":
@@ -40,10 +30,6 @@ def format_char_short(ch: str) -> str:
         return "\\t"
     return ch
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/2
 class HuffmanNode:
     """Nodo para el Árbol de Huffman."""
     __slots__ = ("char", "freq", "left", "right")
@@ -54,10 +40,6 @@ class HuffmanNode:
         self.left = left
         self.right = right
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/2
 class HuffmanView(BaseView):
     """Vista interactiva para construcción y visualización de Árboles de Huffman."""
 
@@ -121,13 +103,10 @@ class HuffmanView(BaseView):
             command=self._on_build,
         )
         self._btn_build.pack(side="left", padx=(0, 8))
-<<<<<<< HEAD
-=======
         self._delete_entry = ctk.CTkEntry(row, width=80, height=36, placeholder_text="Carácter", font=ctk.CTkFont(size=13))
         self._delete_entry.pack(side="left", padx=(0, 6))
         self._btn_delete = ctk.CTkButton(row, text="Eliminar", width=90, height=36, fg_color="#C62828", hover_color="#8E0000", text_color="white", command=self._on_delete)
         self._btn_delete.pack(side="left", padx=(0, 8))
->>>>>>> origin/2
 
         self._btn_clear = ctk.CTkButton(
             row,
@@ -274,11 +253,7 @@ class HuffmanView(BaseView):
 
     def _show_error(self, msg: str):
         self._error_box.pack(fill="x", padx=20, pady=(0, 4))
-<<<<<<< HEAD
         self._error_label.configure(text=f"⚠️ {msg}")
-=======
-        self._error_label.configure(text=f"{msg}")
->>>>>>> origin/2
 
     def _clear_error(self):
         self._error_label.configure(text="")
@@ -374,28 +349,27 @@ class HuffmanView(BaseView):
         # Renderizar Sidebar (Tabla, Bits, Stats)
         self._render_sidebar()
 
-<<<<<<< HEAD
-=======
     def _on_delete(self):
         if not self._message:
             self._show_error("Primero construye un árbol de Huffman.")
             return
-        target=self._delete_entry.get()
-        if len(target)!=1:
+        target = self._delete_entry.get()
+        if len(target) != 1:
             self._show_error("Ingresa un solo carácter para eliminar.")
             return
         if target not in self._message:
             self._show_error(f"El carácter «{target}» no existe en el mensaje.")
             return
-        self._message=self._message.replace(target, "")
+        self._message = self._message.replace(target, "")
         if not self._message:
-            self._on_clear(); return
+            self._on_clear()
+            return
         self._tree_root, self._codes, self._frequencies = self._build_huffman_tree(self._message)
-        self._render_tree(); self._render_sidebar()
+        self._render_tree()
+        self._render_sidebar()
         self._delete_entry.delete(0, "end")
         self._clear_error()
 
->>>>>>> origin/2
     def _on_clear(self):
         self._message = ""
         self._tree_root = None
@@ -441,22 +415,23 @@ class HuffmanView(BaseView):
             level_height=85,
         )
         self._draw_branch_labels()
-<<<<<<< HEAD
-=======
         self._draw_level_labels()
 
     def _draw_level_labels(self):
         self._canvas.delete("level_labels")
-        seen=set()
+        seen = set()
+
         def walk(node, depth):
-            if node is None:return
-            items=self._tree_items.get(id(node))
+            if node is None:
+                return
+            items = self._tree_items.get(id(node))
             if items and depth not in seen:
-                self._canvas.create_text(18, items["y"], text=f"Nivel {depth}", font=("Consolas",10,"bold"), fill="#64748B", anchor="w", tags="level_labels")
+                self._canvas.create_text(18, items["y"], text=f"Nivel {depth}", font=("Consolas", 10, "bold"), fill="#64748B", anchor="w", tags="level_labels")
                 seen.add(depth)
-            walk(node.left, depth+1); walk(node.right, depth+1)
-        walk(self._tree_root,0)
->>>>>>> origin/2
+            walk(node.left, depth + 1)
+            walk(node.right, depth + 1)
+
+        walk(self._tree_root, 0)
 
     def _draw_branch_labels(self):
         self._canvas.delete("branch_bits")
@@ -508,11 +483,7 @@ class HuffmanView(BaseView):
         # 1. Cabecera de la Tabla
         header = ctk.CTkFrame(self._table_frame, fg_color="transparent")
         header.pack(fill="x", pady=(0, 4))
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> origin/2
         ctk.CTkLabel(header, text="Carácter", width=90, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(side="left", padx=4)
         ctk.CTkLabel(header, text="Freq.", width=50, font=ctk.CTkFont(size=12, weight="bold"), anchor="center").pack(side="left", padx=4)
         ctk.CTkLabel(header, text="Código", width=90, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(side="left", padx=4)
@@ -580,7 +551,3 @@ class HuffmanView(BaseView):
         self._on_clear()
         self._manual_entry.insert(0, payload["mensaje"])
         self._on_build()
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/2

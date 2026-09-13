@@ -58,10 +58,7 @@ class ArbolTrieView(BaseView):
         self._is_animating = False
         self._insert_queue = []
         self._insert_index = 0
-<<<<<<< HEAD
-=======
         self._pending_action = None
->>>>>>> origin/2
         self._build_ui()
 
     def _build_ui(self):
@@ -209,7 +206,7 @@ class ArbolTrieView(BaseView):
         self._show_placeholder()
 
     def _show_error(self, msg):
-        self._error_box.pack(fill="x", padx=20, pady=(0,4))
+        self._error_box.pack(fill="x", padx=20, pady=(0, 4))
         self._error_label.configure(text=msg)
 
     def _clear_error(self):
