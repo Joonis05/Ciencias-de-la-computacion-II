@@ -33,74 +33,70 @@ class TransformacionClavesView(BaseView):
         inner = ctk.CTkFrame(config, fg_color='transparent')
         inner.pack(padx=16, pady=14, fill='x')
 
+        # Row 1: Modo de Carga [Aleatorio | Manual]
         row1 = ctk.CTkFrame(inner, fg_color='transparent')
         row1.pack(fill='x', pady=(0, 10))
-        ctk.CTkLabel(row1, text='Modo de carga:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
+        ctk.CTkLabel(row1, text='Modo de Carga:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
         self._mode_seg = ctk.CTkSegmentedButton(row1, values=['Aleatorio', 'Manual'], variable=self._mode_var, command=self._on_mode_change, font=ctk.CTkFont(size=13))
         self._mode_seg.pack(side='left')
 
+        # Row 2: Cantidad de registros [ ] Tamaño de clave [ ] Solución de colisiones [ ] [Generar Estructura] [Limpiar]
         row2 = ctk.CTkFrame(inner, fg_color='transparent')
         row2.pack(fill='x', pady=(0, 10))
-        self._key_size_entry = self._entry_with_label(row2, 'Tamaño de clave:', str(_DEFAULT_KEY_SIZE))
         self._size_entry = self._entry_with_label(row2, 'Cantidad de registros:', str(_DEFAULT_SIZE))
-        self._btn_structure = ctk.CTkButton(row2, text='Generar estructura', width=150, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate_structure)
+        self._key_size_entry = self._entry_with_label(row2, 'Tamaño de clave:', str(_DEFAULT_KEY_SIZE))
+        self._btn_structure = ctk.CTkButton(row2, text='Generar Estructura', width=140, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate_structure)
         self._btn_structure.pack(side='left', padx=(0, 8))
-        self._btn_generate = ctk.CTkButton(row2, text='Añadir', width=120, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate)
-        self._btn_generate.pack(side='left', padx=(0, 8))
-        self._btn_clear = ctk.CTkButton(row2, text='Limpiar', width=100, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_clear)
+        self._btn_clear = ctk.CTkButton(row2, text='Limpiar', width=90, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_clear)
         self._btn_clear.pack(side='left', padx=(0, 8))
-        self._btn_save = ctk.CTkButton(row2, text='Guardar', width=100, height=34, command=self._on_save)
-        self._btn_save.pack(side='right', padx=(8, 0))
-        self._btn_load = ctk.CTkButton(row2, text='Cargar', width=100, height=34, command=self._on_load)
-        self._btn_load.pack(side='right')
-        self._info_label = ctk.CTkLabel(row2, text='', font=ctk.CTkFont(size=12), text_color=('gray50', 'gray55'))
-        self._info_label.pack(side='left', padx=(0, 10))
 
-        row3 = ctk.CTkFrame(inner, fg_color='transparent')
-        row3.pack(fill='x', pady=(0, 10))
-        ctk.CTkLabel(row3, text='Valores:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 8))
-        self._manual_entry = ctk.CTkEntry(row3, height=34, placeholder_text='Ej: 25, 35, 45, 15', font=ctk.CTkFont(size=14))
-        self._manual_entry.pack(side='left', fill='x', expand=True)
-
-        row4 = ctk.CTkFrame(inner, fg_color='transparent')
-        row4.pack(fill='x')
-        ctk.CTkLabel(row4, text='Solución de colisiones:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
-        self._collision_menu = ctk.CTkOptionMenu(row4, values=_COLLISION_METHODS, width=190, height=34, command=self._on_collision_selected)
+        ctk.CTkLabel(row2, text='Solución de colisiones:', font=ctk.CTkFont(size=13, weight='bold')).pack(side='left', padx=(8, 4))
+        self._collision_menu = ctk.CTkOptionMenu(row2, values=_COLLISION_METHODS, width=170, height=34, command=self._on_collision_selected)
         self._collision_menu.pack(side='left')
         self._collision_menu.set('Seleccione una opción')
-        self._collision_status = ctk.CTkLabel(row4, text='No se necesita una estrategia todavía.', font=ctk.CTkFont(size=12), text_color=('gray50', 'gray55'))
-        self._collision_status.pack(side='left', padx=(15, 0))
+        self._info_label = ctk.CTkLabel(row2, text='', font=ctk.CTkFont(size=12), text_color=('gray50', 'gray55'))
+        self._info_label.pack(side='left', padx=(8, 0))
 
-        search = ctk.CTkFrame(self.content, corner_radius=12, fg_color=('gray92', 'gray17'), border_width=2, border_color=('gray78', 'gray30'))
-        search.pack(fill='x', padx=10, pady=(0, 8))
-        si = ctk.CTkFrame(search, fg_color='transparent')
-        si.pack(padx=16, pady=12, fill='x')
-        sr = ctk.CTkFrame(si, fg_color='transparent')
-        sr.pack(fill='x')
-        ctk.CTkLabel(sr, text='Clave objetivo:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 8))
-        self._search_entry = ctk.CTkEntry(sr, width=110, height=34, placeholder_text='Ej: 45', font=ctk.CTkFont(size=14), justify='center')
-        self._search_entry.pack(side='left', padx=(0, 12))
-        self._btn_search = ctk.CTkButton(sr, text='Buscar', width=110, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_search)
+        # Row 3: Valores [_______________________________________________________]
+        row3 = ctk.CTkFrame(inner, fg_color='transparent')
+        row3.pack(fill='x', pady=(0, 10))
+        ctk.CTkLabel(row3, text='Valores:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
+        self._val_entry = ctk.CTkEntry(row3, height=34, placeholder_text='Ingrese valores o clave objetivo (ej: 25, 35, 45, 15)', font=ctk.CTkFont(size=14))
+        self._val_entry.pack(side='left', fill='x', expand=True)
+        self._manual_entry = self._val_entry
+        self._search_entry = self._val_entry
+
+        # Row 4: [Añadir] [Buscar] [Eliminar] [Reiniciar] | Speed Slider | [Guardar] [Cargar]
+        row4 = ctk.CTkFrame(inner, fg_color='transparent')
+        row4.pack(fill='x', pady=(0, 10))
+        self._btn_generate = ctk.CTkButton(row4, text='Añadir', width=90, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate)
+        self._btn_generate.pack(side='left', padx=(0, 8))
+        self._btn_search = ctk.CTkButton(row4, text='Buscar', width=90, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_search)
         self._btn_search.pack(side='left', padx=(0, 8))
-        self._btn_delete = ctk.CTkButton(sr, text='Eliminar', width=110, height=34, fg_color='#C62828', hover_color='#8E0000', text_color='white', font=ctk.CTkFont(size=13, weight='bold'), command=self._on_delete)
+        self._btn_delete = ctk.CTkButton(row4, text='Eliminar', width=90, height=34, fg_color='#C62828', hover_color='#8E0000', text_color='white', font=ctk.CTkFont(size=13, weight='bold'), command=self._on_delete)
         self._btn_delete.pack(side='left', padx=(0, 8))
-        self._btn_reset_search = ctk.CTkButton(sr, text='Reiniciar Búsqueda', width=160, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_reset_search)
-        self._btn_reset_search.pack(side='left')
+        self._btn_reset_search = ctk.CTkButton(row4, text='Reiniciar', width=90, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_reset_search)
+        self._btn_reset_search.pack(side='left', padx=(0, 16))
 
-        self._status_box = ctk.CTkFrame(si, corner_radius=8, fg_color=('gray85', 'gray22'), border_width=1, border_color=('gray75', 'gray35'))
-        self._status_box.pack(fill='x', pady=(10, 0))
-        self._status_label = ctk.CTkLabel(self._status_box, text='Estado: Listo para realizar una búsqueda hash.', font=ctk.CTkFont(size=14, weight='bold'), text_color=('gray20', 'gray80'), anchor='w', padx=12, pady=10)
-        self._status_label.pack(fill='x')
-
-        speed_row = ctk.CTkFrame(si, fg_color='transparent')
-        speed_row.pack(fill='x', pady=(8, 0))
-        ctk.CTkLabel(speed_row, text='Velocidad (ms):', font=ctk.CTkFont(size=13, weight='bold')).pack(side='left', padx=(0, 8))
-        self._speed_slider = ctk.CTkSlider(speed_row, from_=100, to=2000, number_of_steps=19, width=180)
+        ctk.CTkLabel(row4, text='Velocidad:', font=ctk.CTkFont(size=12, weight='bold')).pack(side='left', padx=(0, 4))
+        self._speed_slider = ctk.CTkSlider(row4, from_=100, to=2000, number_of_steps=19, width=130, command=self._on_speed_change)
         self._speed_slider.set(500)
-        self._speed_slider.pack(side='left', padx=(0, 8))
-        self._speed_label = ctk.CTkLabel(speed_row, text='500 ms', font=ctk.CTkFont(size=13), text_color=('gray40', 'gray60'), width=65)
-        self._speed_label.pack(side='left')
-        self._speed_slider.configure(command=self._on_speed_change)
+        self._speed_slider.pack(side='left', padx=(0, 4))
+        self._speed_label = ctk.CTkLabel(row4, text='500 ms', font=ctk.CTkFont(size=12), text_color=('gray40', 'gray60'), width=55)
+        self._speed_label.pack(side='left', padx=(0, 8))
+
+        self._btn_save = ctk.CTkButton(row4, text='Guardar', width=80, height=34, command=self._on_save)
+        self._btn_save.pack(side='right', padx=(6, 0))
+        self._btn_load = ctk.CTkButton(row4, text='Cargar', width=80, height=34, command=self._on_load)
+        self._btn_load.pack(side='right')
+
+        # Row 5: Estado: ...
+        row5 = ctk.CTkFrame(inner, corner_radius=8, fg_color=('gray85', 'gray22'), border_width=1, border_color=('gray75', 'gray35'))
+        row5.pack(fill='x', pady=(4, 0))
+        self._status_box = row5
+        self._status_label = ctk.CTkLabel(self._status_box, text='Estado: Ready for hash search.', font=ctk.CTkFont(size=14, weight='bold'), text_color=('gray20', 'gray80'), anchor='w', padx=12, pady=10)
+        self._status_label.pack(fill='x')
+        self._collision_status = self._status_label
 
         self._error_box = ctk.CTkFrame(self.content, corner_radius=8, fg_color=('#FEE2E2', '#450A0A'), border_width=1, border_color=('#FCA5A5', '#7F1D1D'))
         self._error_box.pack(fill='x', padx=20, pady=(0, 4))
@@ -248,6 +244,30 @@ class TransformacionClavesView(BaseView):
         self._clear_error()
         self._status_label.configure(text=f'Estructura generada con {size} registros vacíos. Ahora puedes añadir claves.')
 
+    def _get_existing_keys(self):
+        existing = set()
+        for slot in self._table:
+            if slot is None:
+                continue
+            if isinstance(slot, list):
+                existing.update(slot)
+            else:
+                existing.add(slot)
+        if self._pending_key is not None:
+            existing.add(self._pending_key)
+        return existing
+
+    def _generate_unique_random_keys(self, count, min_key, max_key, existing_set):
+        available_range = max_key - min_key + 1
+        if available_range < len(existing_set) + count:
+            return None
+        res = set()
+        while len(res) < count:
+            k = random.randint(min_key, max_key)
+            if k not in existing_set and k not in res:
+                res.add(k)
+        return list(res)
+
     def _on_generate(self):
         if not self._table_created:
             self._show_error('Primero debes generar la estructura.')
@@ -266,8 +286,12 @@ class TransformacionClavesView(BaseView):
         if remaining <= 0:
             self._show_error('La tabla ya está llena. Presiona Limpiar para comenzar una nueva tabla.')
             return
+        existing_keys = self._get_existing_keys()
         if self._mode_var.get() == 'Aleatorio':
-            new_keys = [random.randint(min_key, max_key) for _ in range(remaining)]
+            new_keys = self._generate_unique_random_keys(remaining, min_key, max_key, existing_keys)
+            if new_keys is None:
+                self._show_error(f'No hay suficientes claves únicas disponibles en el rango de {ks} dígitos.')
+                return
         else:
             new_keys = self._parse_manual_values(min_key, max_key, ks)
             if new_keys is None:
@@ -275,6 +299,15 @@ class TransformacionClavesView(BaseView):
             if len(new_keys) > remaining:
                 self._show_error(f'Solo quedan {remaining} posiciones disponibles en la tabla.')
                 return
+            seen = set()
+            for val in new_keys:
+                if val in seen:
+                    self._show_error(f'La clave {val} está duplicada en la lista ingresada. No se permiten claves repetidas.')
+                    return
+                seen.add(val)
+                if val in existing_keys:
+                    self._show_error(f'La clave {val} ya existe en la tabla. No se permiten claves repetidas.')
+                    return
         self._insert_keys(new_keys)
 
     def _on_collision_selected(self, method):
@@ -353,10 +386,12 @@ class TransformacionClavesView(BaseView):
         self._start_hash_animation(target)
 
     def _get_target(self):
-        raw = self._search_entry.get().strip()
+        raw = self._val_entry.get().strip()
         if not raw:
-            self._show_error('Ingresa la clave objetivo.')
+            self._show_error('Ingresa la clave objetivo en "Valores".')
             return None
+        if ',' in raw:
+            raw = raw.split(',')[0].strip()
         try:
             val = int(raw)
             cfg = self._validate_configuration()

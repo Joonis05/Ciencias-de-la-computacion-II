@@ -32,61 +32,62 @@ class SecuencialView(BaseView):
         inner = ctk.CTkFrame(config_frame, fg_color='transparent')
         inner.pack(padx=16, pady=14, fill='x')
 
+        # Row 1: Modo de Carga [Aleatorio | Manual]
         row1 = ctk.CTkFrame(inner, fg_color='transparent')
         row1.pack(fill='x', pady=(0, 10))
-        ctk.CTkLabel(row1, text='Modo de carga:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
+        ctk.CTkLabel(row1, text='Modo de Carga:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
         self._mode_seg = ctk.CTkSegmentedButton(row1, values=['Aleatorio', 'Manual'], variable=self._mode_var, command=self._on_mode_change, font=ctk.CTkFont(size=13))
         self._mode_seg.pack(side='left')
 
+        # Row 2: Cantidad de registros [ ] Tamaño de clave [ ] [Generar Estructura] [Limpiar]
         row2 = ctk.CTkFrame(inner, fg_color='transparent')
         row2.pack(fill='x', pady=(0, 10))
-        self._key_size_entry = self._entry_with_label(row2, 'Tamaño de clave:', str(_DEFAULT_KEY_SIZE))
         self._size_entry = self._entry_with_label(row2, 'Cantidad de registros:', str(_DEFAULT_SIZE))
-        self._btn_structure = ctk.CTkButton(row2, text='Generar estructura', width=150, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate_structure)
+        self._key_size_entry = self._entry_with_label(row2, 'Tamaño de clave:', str(_DEFAULT_KEY_SIZE))
+        self._btn_structure = ctk.CTkButton(row2, text='Generar Estructura', width=140, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_generate_structure)
         self._btn_structure.pack(side='left', padx=(0, 8))
-        self._btn_generate = ctk.CTkButton(row2, text='Añadir', width=100, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_add)
-        self._btn_generate.pack(side='left', padx=(0, 8))
-        self._btn_clear = ctk.CTkButton(row2, text='Limpiar', width=100, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_clear)
+        self._btn_clear = ctk.CTkButton(row2, text='Limpiar', width=90, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_clear)
         self._btn_clear.pack(side='left', padx=(0, 8))
-        self._btn_save = ctk.CTkButton(row2, text='Guardar', width=100, height=34, command=self._on_save)
-        self._btn_save.pack(side='right', padx=(8, 0))
-        self._btn_load = ctk.CTkButton(row2, text='Cargar', width=100, height=34, command=self._on_load)
-        self._btn_load.pack(side='right')
         self._info_label = ctk.CTkLabel(row2, text='', font=ctk.CTkFont(size=12), text_color=('gray50', 'gray55'))
-        self._info_label.pack(side='left', padx=(0, 10))
+        self._info_label.pack(side='left', padx=(8, 0))
 
+        # Row 3: Valores [_______________________________________________________]
         row3 = ctk.CTkFrame(inner, fg_color='transparent')
-        row3.pack(fill='x')
-        ctk.CTkLabel(row3, text='Agregar valores:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 8))
-        self._manual_entry = ctk.CTkEntry(row3, height=34, placeholder_text='Ej: 12, 45, 7, 89, 23', font=ctk.CTkFont(size=14))
-        self._manual_entry.pack(side='left', fill='x', expand=True)
+        row3.pack(fill='x', pady=(0, 10))
+        ctk.CTkLabel(row3, text='Valores:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 12))
+        self._val_entry = ctk.CTkEntry(row3, height=34, placeholder_text='Ingrese valores o clave objetivo (ej: 12, 45, 7)', font=ctk.CTkFont(size=14))
+        self._val_entry.pack(side='left', fill='x', expand=True)
+        self._manual_entry = self._val_entry
+        self._search_entry = self._val_entry
 
-        search_frame = ctk.CTkFrame(self.content, corner_radius=12, fg_color=('gray92', 'gray17'), border_width=2, border_color=('gray78', 'gray30'))
-        search_frame.pack(fill='x', padx=10, pady=(0, 8))
-        search_inner = ctk.CTkFrame(search_frame, fg_color='transparent')
-        search_inner.pack(padx=16, pady=12, fill='x')
-        s_row1 = ctk.CTkFrame(search_inner, fg_color='transparent')
-        s_row1.pack(fill='x', pady=(0, 8))
-        ctk.CTkLabel(s_row1, text='Valor objetivo:', font=ctk.CTkFont(size=14, weight='bold')).pack(side='left', padx=(0, 8))
-        self._search_entry = ctk.CTkEntry(s_row1, width=110, height=34, placeholder_text='Ej: 45', font=ctk.CTkFont(size=14), justify='center')
-        self._search_entry.pack(side='left', padx=(0, 12))
-        self._btn_search = ctk.CTkButton(s_row1, text='Buscar', width=110, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_start_search)
+        # Row 4: [Añadir] [Buscar] [Eliminar] [Reiniciar] | Speed Slider | [Guardar] [Cargar]
+        row4 = ctk.CTkFrame(inner, fg_color='transparent')
+        row4.pack(fill='x', pady=(0, 10))
+        self._btn_generate = ctk.CTkButton(row4, text='Añadir', width=90, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_add)
+        self._btn_generate.pack(side='left', padx=(0, 8))
+        self._btn_search = ctk.CTkButton(row4, text='Buscar', width=90, height=34, font=ctk.CTkFont(size=13, weight='bold'), command=self._on_start_search)
         self._btn_search.pack(side='left', padx=(0, 8))
-        self._btn_delete = ctk.CTkButton(s_row1, text='Eliminar', width=110, height=34, fg_color='#C62828', hover_color='#8E0000', text_color='white', font=ctk.CTkFont(size=13, weight='bold'), command=self._on_delete)
+        self._btn_delete = ctk.CTkButton(row4, text='Eliminar', width=90, height=34, fg_color='#C62828', hover_color='#8E0000', text_color='white', font=ctk.CTkFont(size=13, weight='bold'), command=self._on_delete)
         self._btn_delete.pack(side='left', padx=(0, 8))
-        self._btn_reset_search = ctk.CTkButton(s_row1, text='Reiniciar Búsqueda', width=160, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_reset_search)
-        self._btn_reset_search.pack(side='left')
+        self._btn_reset_search = ctk.CTkButton(row4, text='Reiniciar', width=90, height=34, fg_color=('gray70', 'gray30'), hover_color=('gray60', 'gray40'), text_color=('black', 'white'), font=ctk.CTkFont(size=13, weight='bold'), command=self._on_reset_search)
+        self._btn_reset_search.pack(side='left', padx=(0, 16))
 
-        s_row2 = ctk.CTkFrame(search_inner, fg_color='transparent')
-        s_row2.pack(fill='x', pady=(0, 8))
-        ctk.CTkLabel(s_row2, text='Velocidad (ms):', font=ctk.CTkFont(size=13, weight='bold')).pack(side='left', padx=(0, 8))
-        self._speed_slider = ctk.CTkSlider(s_row2, from_=100, to=2000, number_of_steps=19, width=180, command=self._on_speed_change)
+        ctk.CTkLabel(row4, text='Velocidad:', font=ctk.CTkFont(size=12, weight='bold')).pack(side='left', padx=(0, 4))
+        self._speed_slider = ctk.CTkSlider(row4, from_=100, to=2000, number_of_steps=19, width=130, command=self._on_speed_change)
         self._speed_slider.set(500)
-        self._speed_slider.pack(side='left', padx=(0, 8))
-        self._speed_label = ctk.CTkLabel(s_row2, text='500 ms', font=ctk.CTkFont(size=13), text_color=('gray40', 'gray60'), width=65)
-        self._speed_label.pack(side='left')
-        self._status_box = ctk.CTkFrame(search_inner, corner_radius=8, fg_color=('gray85', 'gray22'), border_width=1, border_color=('gray75', 'gray35'))
-        self._status_box.pack(fill='x', pady=(4, 0))
+        self._speed_slider.pack(side='left', padx=(0, 4))
+        self._speed_label = ctk.CTkLabel(row4, text='500 ms', font=ctk.CTkFont(size=12), text_color=('gray40', 'gray60'), width=55)
+        self._speed_label.pack(side='left', padx=(0, 8))
+
+        self._btn_save = ctk.CTkButton(row4, text='Guardar', width=80, height=34, command=self._on_save)
+        self._btn_save.pack(side='right', padx=(6, 0))
+        self._btn_load = ctk.CTkButton(row4, text='Cargar', width=80, height=34, command=self._on_load)
+        self._btn_load.pack(side='right')
+
+        # Row 5: Estado: ...
+        row5 = ctk.CTkFrame(inner, corner_radius=8, fg_color=('gray85', 'gray22'), border_width=1, border_color=('gray75', 'gray35'))
+        row5.pack(fill='x', pady=(4, 0))
+        self._status_box = row5
         self._status_label = ctk.CTkLabel(self._status_box, text='Estado: estructura no generada.', font=ctk.CTkFont(size=14, weight='bold'), text_color=('gray20', 'gray80'), anchor='w', padx=12, pady=10)
         self._status_label.pack(fill='x')
 
@@ -94,6 +95,7 @@ class SecuencialView(BaseView):
         self._error_label = ctk.CTkLabel(self._error_box, text='', font=ctk.CTkFont(size=13, weight='bold'), text_color=('#991B1B', '#FCA5A5'), anchor='w', padx=12, pady=6)
         self._error_label.pack(fill='x')
         self._error_box.pack_forget()
+
         self._scroll_frame = ctk.CTkScrollableFrame(self.content, corner_radius=12, fg_color=('gray96', 'gray14'), border_width=2, border_color=('gray78', 'gray30'))
         self._scroll_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
         self._show_placeholder()
@@ -163,6 +165,17 @@ class SecuencialView(BaseView):
         self._status_label.configure(text=f'Estructura generada con {size} registros vacíos. Ahora puedes añadir datos.')
         self._clear_error()
 
+    def _generate_unique_random_keys(self, count, min_key, max_key, existing_set):
+        available_range = max_key - min_key + 1
+        if available_range < len(existing_set) + count:
+            return None
+        res = set()
+        while len(res) < count:
+            k = random.randint(min_key, max_key)
+            if k not in existing_set and k not in res:
+                res.add(k)
+        return list(res)
+
     def _on_add(self):
         if self._is_animating:
             return
@@ -176,9 +189,13 @@ class SecuencialView(BaseView):
         if cfg is None:
             return
         key_size, _, min_key, max_key = cfg
+        existing_keys = set(self._data)
         if self._mode_var.get() == 'Aleatorio':
             remaining = self._capacity - len(self._data)
-            new_values = [random.randint(min_key, max_key) for _ in range(remaining)]
+            new_values = self._generate_unique_random_keys(remaining, min_key, max_key, existing_keys)
+            if new_values is None:
+                self._show_error(f'No hay suficientes claves únicas disponibles en el rango de {key_size} dígitos.')
+                return
         else:
             new_values = self._parse_manual_values(min_key, max_key, key_size)
             if new_values is None:
@@ -187,9 +204,18 @@ class SecuencialView(BaseView):
             if len(new_values) > remaining:
                 self._show_error(f'Solo quedan {remaining} registros disponibles.')
                 return
+            seen = set()
+            for val in new_values:
+                if val in seen:
+                    self._show_error(f'La clave {val} está duplicada en la lista ingresada. No se permiten claves repetidas.')
+                    return
+                seen.add(val)
+                if val in existing_keys:
+                    self._show_error(f'La clave {val} ya existe en la estructura. No se permiten claves repetidas.')
+                    return
         self._data.extend(new_values)
         self._data.sort()
-        self._manual_entry.delete(0, 'end')
+        self._val_entry.delete(0, 'end')
         self._render_structure()
         self._info_label.configure(text=f'{len(self._data)}/{self._capacity} registros ordenados')
         self._status_label.configure(text=f'Se añadieron {len(new_values)} registro(s). La estructura se mantiene ordenada.')
@@ -288,10 +314,12 @@ class SecuencialView(BaseView):
                 row.configure(fg_color=row._default_bg)
 
     def _get_target(self):
-        raw = self._search_entry.get().strip()
+        raw = self._val_entry.get().strip()
         if not raw:
-            self._show_error('Ingresa el valor objetivo.')
+            self._show_error('Ingresa el valor objetivo en "Valores".')
             return None
+        if ',' in raw:
+            raw = raw.split(',')[0].strip()
         try:
             val = int(raw)
             cfg = self._validate_configuration()
