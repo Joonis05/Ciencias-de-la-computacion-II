@@ -23,5 +23,4 @@ class ResiduosView(BaseView):
         self.add_nav_button("Árbol Digital", "arbol_digital", parent=btn_frame)
         self.add_nav_button("Árbol Trie", "arbol_trie", parent=btn_frame)
         self.add_nav_button("Residuos Múltiples", "arbol_multiple", parent=btn_frame)
-        self.add_nav_button("Árboles de Huffman", "huffman", parent=btn_frame)
 
