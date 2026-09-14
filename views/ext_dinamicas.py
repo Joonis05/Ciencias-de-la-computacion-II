@@ -27,6 +27,7 @@ class BusquedaDinamicaExternaView(BaseView):
         self._cubeta_heights = {c: _INITIAL_ROW_HEIGHT for c in range(_INITIAL_COLS)}
         self._cell_widgets = {}  # (r, c) -> dict of widgets
         self._mode_var = ctk.StringVar(value="Aleatorio")
+        self._expansion_mode_var = ctk.StringVar(value="Total")
         self._anim_job = None
         self._is_animating = False
         self._pending_action = None
@@ -47,7 +48,7 @@ class BusquedaDinamicaExternaView(BaseView):
         inner = ctk.CTkFrame(config, fg_color="transparent")
         inner.pack(padx=16, pady=14, fill="x")
 
-        # Row 1: Modo de Carga [Aleatorio | Manual]
+        # Row 1: Modo de Carga [Aleatorio | Manual] | Modo de Expansión [Total | Parcial]
         row1 = ctk.CTkFrame(inner, fg_color="transparent")
         row1.pack(fill="x", pady=(0, 10))
         ctk.CTkLabel(row1, text="Modo de Carga:", font=ctk.CTkFont(size=14, weight="bold")).pack(
@@ -60,7 +61,18 @@ class BusquedaDinamicaExternaView(BaseView):
             command=self._on_mode_change,
             font=ctk.CTkFont(size=13),
         )
-        self._mode_seg.pack(side="left")
+        self._mode_seg.pack(side="left", padx=(0, 24))
+
+        ctk.CTkLabel(row1, text="Modo de Expansión:", font=ctk.CTkFont(size=14, weight="bold")).pack(
+            side="left", padx=(0, 12)
+        )
+        self._expansion_mode_seg = ctk.CTkSegmentedButton(
+            row1,
+            values=["Total", "Parcial"],
+            variable=self._expansion_mode_var,
+            font=ctk.CTkFont(size=13),
+        )
+        self._expansion_mode_seg.pack(side="left")
 
         # Row 2: Cantidad de registros [ ] Tamaño de clave [ ] [Generar Estructura] [Limpiar]
         row2 = ctk.CTkFrame(inner, fg_color="transparent")
@@ -220,8 +232,8 @@ class BusquedaDinamicaExternaView(BaseView):
         )
         self._scroll_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
-        # Generar estructura 2x2 inicial por defecto
-        self._on_generate_structure()
+        # Estado inicial: mostrar placeholder hasta presionar «Generar Estructura»
+        self._show_placeholder()
         self._on_mode_change(self._mode_var.get())
 
     def _entry_with_label(self, parent, text, default):
@@ -297,7 +309,13 @@ class BusquedaDinamicaExternaView(BaseView):
 
         expanded = False
         if needs_expansion:
-            self._num_cols *= 2
+            if self._expansion_mode_var.get() == "Parcial":
+                if (self._num_cols & (self._num_cols - 1)) == 0:
+                    self._num_cols += self._num_cols // 2
+                else:
+                    self._num_cols += self._num_cols // 3
+            else:
+                self._num_cols *= 2
             expanded = True
             # Reorganizar todas las claves existentes recalculando (clave % num_cols)
             self._cubetas = {c: [] for c in range(self._num_cols)}
@@ -321,6 +339,7 @@ class BusquedaDinamicaExternaView(BaseView):
         self._cubetas = {c: [] for c in range(_INITIAL_COLS)}
         self._cubeta_heights = {c: _INITIAL_ROW_HEIGHT for c in range(_INITIAL_COLS)}
         self._structure_created = True
+        self._expansion_mode_seg.configure(state="disabled")
         self._render_structure()
         self._update_info_and_status("Estructura 2x2 generada (2 cubetas). Función Hash: clave % 2.")
         self._clear_error()
@@ -433,6 +452,7 @@ class BusquedaDinamicaExternaView(BaseView):
         self._cubetas = {c: [] for c in range(_INITIAL_COLS)}
         self._cubeta_heights = {c: _INITIAL_ROW_HEIGHT for c in range(_INITIAL_COLS)}
         self._structure_created = False
+        self._expansion_mode_seg.configure(state="normal")
         self._manual_entry.delete(0, "end")
         self._info_label.configure(text="")
         self._clear_error()
@@ -538,6 +558,8 @@ class BusquedaDinamicaExternaView(BaseView):
             self._speed_slider,
         ):
             w.configure(state="disabled" if disabled else "normal")
+        exp_state = "disabled" if (disabled or self._structure_created) else "normal"
+        self._expansion_mode_seg.configure(state=exp_state)
         if not disabled:
             self._on_mode_change(self._mode_var.get())
 
@@ -683,6 +705,7 @@ class BusquedaDinamicaExternaView(BaseView):
             "cubetas": self._cubetas,
             "cubeta_heights": self._cubeta_heights,
             "mode": self._mode_var.get(),
+            "expansion_mode": self._expansion_mode_var.get(),
             "data": self._get_all_inserted_keys(),
         }
         save_json(self, payload, "Guardar búsqueda dinámica externa")
@@ -699,12 +722,15 @@ class BusquedaDinamicaExternaView(BaseView):
             size = int(payload.get("size", len(data)))
             num_cols = int(payload.get("num_cols", _INITIAL_COLS))
             key_size = int(payload.get("key_size", _DEFAULT_KEY_SIZE))
+            expansion_mode = payload.get("expansion_mode", "Total")
 
             self._max_records = size
             self._num_cols = num_cols
             self._cubetas = {int(k): list(v) for k, v in payload.get("cubetas", {}).items()}
             self._cubeta_heights = {int(k): int(v) for k, v in payload.get("cubeta_heights", {}).items()}
+            self._expansion_mode_var.set(expansion_mode)
             self._structure_created = True
+            self._expansion_mode_seg.configure(state="disabled")
 
             self._key_size_entry.delete(0, "end")
             self._key_size_entry.insert(0, str(key_size))
