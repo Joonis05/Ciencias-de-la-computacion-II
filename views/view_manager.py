@@ -32,6 +32,7 @@ class ViewManager(ctk.CTkFrame):
         from views.ext_secuencial import BusquedaSecuencialExternaView
         from views.ext_binaria import BusquedaBinariaExternaView
         from views.ext_transformacion_claves import BusquedaTransformacionClavesExternaView
+        from views.ext_dinamicas import BusquedaDinamicaExternaView
 
         self._views = {
             "inicio": InicioView,
@@ -50,6 +51,7 @@ class ViewManager(ctk.CTkFrame):
             "ext_secuencial": BusquedaSecuencialExternaView,
             "ext_binaria": BusquedaBinariaExternaView,
             "ext_transformacion_claves": BusquedaTransformacionClavesExternaView,
+            "ext_dinamicas": BusquedaDinamicaExternaView,
         }
 
     def show_view(self, view_key: str):
@@ -101,6 +103,7 @@ class ViewManager(ctk.CTkFrame):
             "ext_secuencial": "Secuencial",
             "ext_binaria": "Binaria",
             "ext_transformacion_claves": "Transformación de Claves",
+            "ext_dinamicas": "Dinámicas",
         }
         crumbs = [LABELS.get(k, k) for k in self._history]
         if self._current_view:
