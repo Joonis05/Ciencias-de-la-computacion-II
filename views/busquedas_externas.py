@@ -1,3 +1,4 @@
+import customtkinter as ctk
 from views.base_view import BaseView
 
 
@@ -14,9 +15,11 @@ class BusquedasExternasView(BaseView):
 
     def _build_ui(self):
         self.add_title("Búsquedas Externas")
-        self.add_subtitle(
-            "Algoritmos de búsqueda que operan sobre datos almacenados en disco."
-        )
-        self.workspace = self.add_algorithm_workspace(
-            "⚙️  Aquí se implementará el algoritmo de búsquedas externas"
-        )
+        self.add_subtitle("Selecciona un algoritmo de búsqueda externa")
+
+        btn_frame = ctk.CTkFrame(self.content, fg_color="transparent")
+        btn_frame.pack(expand=True)
+
+        self.add_nav_button("Secuencial", "ext_secuencial", parent=btn_frame)
+        self.add_nav_button("Binaria", "ext_binaria", parent=btn_frame)
+        self.add_nav_button("Transformación de Claves", "ext_transformacion_claves", parent=btn_frame)

@@ -29,6 +29,9 @@ class ViewManager(ctk.CTkFrame):
         from views.Arbol_multiple import ArbolMultipleView
         from views.huffman import HuffmanView
         from views.grafos import GrafosView
+        from views.ext_secuencial import BusquedaSecuencialExternaView
+        from views.ext_binaria import BusquedaBinariaExternaView
+        from views.ext_transformacion_claves import BusquedaTransformacionClavesExternaView
 
         self._views = {
             "inicio": InicioView,
@@ -44,6 +47,9 @@ class ViewManager(ctk.CTkFrame):
             "arbol_multiple": ArbolMultipleView,
             "huffman": HuffmanView,
             "grafos": GrafosView,
+            "ext_secuencial": BusquedaSecuencialExternaView,
+            "ext_binaria": BusquedaBinariaExternaView,
+            "ext_transformacion_claves": BusquedaTransformacionClavesExternaView,
         }
 
     def show_view(self, view_key: str):
@@ -92,6 +98,9 @@ class ViewManager(ctk.CTkFrame):
             "arbol_multiple": "Residuos Múltiples",
             "huffman": "Árboles de Huffman",
             "grafos": "Grafos",
+            "ext_secuencial": "Secuencial",
+            "ext_binaria": "Binaria",
+            "ext_transformacion_claves": "Transformación de Claves",
         }
         crumbs = [LABELS.get(k, k) for k in self._history]
         if self._current_view:
