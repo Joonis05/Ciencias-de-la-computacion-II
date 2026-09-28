@@ -1,7 +1,9 @@
+import customtkinter as ctk
 from views.base_view import BaseView
 
 
 class GrafosView(BaseView):
+    """Menú principal de la sección de grafos."""
 
     def __init__(self, master, *, view_manager, **kwargs):
         super().__init__(
@@ -15,8 +17,29 @@ class GrafosView(BaseView):
     def _build_ui(self):
         self.add_title("Grafos")
         self.add_subtitle(
-            "Representación y recorrido de estructuras de datos tipo grafo."
+            "Selecciona el tipo de operación o análisis que deseas realizar."
         )
-        self.workspace = self.add_algorithm_workspace(
-            "⚙️  Aquí se implementará el algoritmo de grafos"
+
+        frame = ctk.CTkFrame(
+            self.content,
+            fg_color="transparent",
+        )
+        frame.pack(expand=True)
+
+        self.add_nav_button(
+            "Operaciones con Grafos",
+            "grafos_operaciones",
+            parent=frame,
+        )
+
+        self.add_nav_button(
+            "Productos de Grafos",
+            "grafos_productos",
+            parent=frame,
+        )
+
+        self.add_nav_button(
+            "Árboles como Grafos",
+            "grafos_arboles",
+            parent=frame,
         )

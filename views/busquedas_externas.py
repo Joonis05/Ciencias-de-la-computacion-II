@@ -24,3 +24,4 @@ class BusquedasExternasView(BaseView):
         self.add_nav_button("Binaria", "ext_binaria", parent=btn_frame)
         self.add_nav_button("Transformación de Claves", "ext_transformacion_claves", parent=btn_frame)
         self.add_nav_button("Dinámicas", "ext_dinamicas", parent=btn_frame)
+        self.add_nav_button("Índices","indices", parent=btn_frame)
